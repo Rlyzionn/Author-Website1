@@ -17,6 +17,7 @@
   --oxblood: #c4142f;
   --steel: #8fa3c4;
   --accent: var(--oxblood);
+  --manila: #c9b48a;
 
   --serif: 'Instrument Serif', 'Didot', 'Times New Roman', serif;
   --sans: 'Geist', system-ui, -apple-system, sans-serif;
@@ -294,8 +295,9 @@ main { position: relative; z-index: 2; }
 .list__item { position: relative; display: grid; grid-template-columns: 76px 1fr; gap: 22px; padding: 22px 0; border-bottom: 1px solid var(--line); }
 .list__item::before { content: ''; position: absolute; left: -18px; top: 22px; bottom: 22px; width: 1px; background: var(--accent); transform: scaleY(0); transition: transform .5s var(--ease-out); }
 .list__item:hover::before { transform: scaleY(1); }
-.cover--thumb { width: 76px; align-self: start; transition: transform .6s var(--ease-out); }
-.list__item:hover .cover--thumb { transform: translateY(-4px) rotate(-1.5deg); }
+.list__item { perspective: 700px; }
+.b3d--thumb { width: 76px; align-self: start; --th: 7px; }
+.list__item:hover .b3d--thumb { --ry: -32deg; --lift: -4px; }
 .list h3 { margin: 0 0 6px; font: 400 1.7rem/1.1 var(--serif); letter-spacing: -.015em; }
 .list__by { margin: 0 0 8px !important; font: 500 .64rem/1.5 var(--sans) !important; letter-spacing: .14em; text-transform: uppercase; color: var(--text-3) !important; }
 .list p { margin: 0 0 12px; font-size: .95rem; font-weight: 350; color: var(--text-2); }
@@ -312,18 +314,101 @@ main { position: relative; z-index: 2; }
 /* ---------- shelf ---------- */
 .shelf__head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 24px 40px; margin-bottom: 56px; }
 .shelf__head .title { margin: 0; }
-.filters { display: flex; flex-wrap: wrap; gap: 6px; }
+/* filing-cabinet tabs: the selected folder tab is manila and sits proud of the rail */
+.filters { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 4px; padding: 0 4px; border-bottom: 1px solid var(--line-strong); }
 .filters button {
-  min-height: 40px; padding: 0 16px; border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
-  background: transparent; color: var(--text-2); font: 400 .8rem var(--sans); transition: color var(--fast), border-color var(--fast), background-color var(--fast);
+  position: relative; min-height: 40px; padding: 0 22px; border: 0; margin-bottom: -1px; cursor: pointer;
+  clip-path: polygon(9px 0, calc(100% - 9px) 0, 100% 100%, 0 100%); border-radius: 6px 6px 0 0;
+  background: rgba(237,231,221,.06); color: var(--text-2); font: 500 .76rem var(--sans); letter-spacing: .06em;
+  transition: color var(--fast), background-color .3s, transform .4s var(--ease-out);
 }
-.filters button:hover { color: var(--text); border-color: var(--line-strong); }
-.filters button[aria-pressed="true"] { background: var(--bone); border-color: var(--bone); color: var(--ink); }
+.filters button:hover { color: var(--text); background: rgba(237,231,221,.12); transform: translateY(-2px); }
+.filters button[aria-pressed="true"] { min-height: 46px; background: var(--manila); color: #1d1810; font-family: 'Special Elite', var(--mono); letter-spacing: .02em; transform: none; }
 .shelf__grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 56px 32px; }
 .book[hidden] { display: none; }
-.book a { display: block; text-decoration: none; perspective: 900px; }
-.book .cover { transform-origin: 50% 100%; transition: transform .7s var(--ease-out), box-shadow .7s var(--ease-out); }
-.book a:hover .cover, .book a:focus-visible .cover { transform: translateY(-10px) rotateX(6deg) rotateY(-8deg); box-shadow: 0 40px 60px -22px rgba(0,0,0,.95), 0 0 0 1px rgba(255,255,255,.06); }
+.book a { display: block; text-decoration: none; perspective: 1100px; cursor: pointer; }
+.book a:hover .b3d, .book a:focus-visible .b3d { --ry: -30deg; --lift: -14px; }
+.book__title { transition: color .4s; }
+.book a:hover .book__title { color: var(--accent); }
+
+/* ---------- 3D books: a cover with real page edges and a spine ---------- */
+.b3d {
+  --th: 22px; --ry: -16deg; --rx: 0deg; --lift: 0px; --spine: #111;
+  position: relative; display: block; transform-style: preserve-3d;
+  transform: translateY(var(--lift)) rotateX(var(--rx)) rotateY(var(--ry));
+  transition: transform .9s var(--ease-out);
+}
+.b3d > .cover { transform: translateZ(calc(var(--th) / 2)); }
+.b3d__pages, .b3d__spine { position: absolute; top: 1.4%; bottom: 1.4%; width: var(--th); }
+.b3d__pages { /* the page block, seen past the cover's right edge */
+  right: 0; transform-origin: right center; transform: translateZ(calc(var(--th) / 2)) rotateY(-90deg);
+  background: linear-gradient(90deg, rgba(0,0,0,.35), transparent 30%, transparent 70%, rgba(0,0,0,.25)), repeating-linear-gradient(90deg, #e6dcc5 0 1px, #c4b89c 1px 2px);
+}
+.b3d__spine { top: 0; bottom: 0; left: 0; transform-origin: left center; transform: translateZ(calc(var(--th) / 2)) rotateY(90deg); background: linear-gradient(90deg, rgba(255,255,255,.08), transparent 40%, rgba(0,0,0,.4)), var(--spine); }
+.b3d::after { /* contact shadow on the shelf */
+  content: ''; position: absolute; left: 4%; right: -6%; bottom: -16px; height: 26px; pointer-events: none;
+  background: radial-gradient(closest-side, rgba(0,0,0,.75), transparent); transform: translateZ(-30px);
+}
+.b3d[data-series="josh"] { --spine: #1b1b1d; }
+.b3d[data-series="hawk"] { --spine: #0f1c3d; }
+.b3d[data-series="true"] { --spine: #222; }
+.b3d[data-series="dragon"] { --spine: #0b2a24; }
+.b3d[data-series="trail"] { --spine: #33261b; }
+.b3d[data-series="kids"] { --spine: #d9a93a; }
+
+/* ---------- police tape across a chapter boundary ---------- */
+.tape { position: absolute; left: 0; right: 0; top: 0; height: 0; z-index: 3; overflow-x: clip; pointer-events: none; }
+.tape__strip {
+  position: absolute; left: -10vw; width: 120vw; top: -26px; height: 46px; display: flex; align-items: center; overflow: hidden;
+  background: linear-gradient(180deg, rgba(255,255,255,.18), transparent 40%, rgba(0,0,0,.18)), #d8b13a;
+  box-shadow: 0 18px 30px -12px rgba(0,0,0,.85), 0 2px 0 rgba(0,0,0,.25);
+  transform: rotate(-3deg);
+}
+.tape__strip--b { top: 6px; height: 38px; transform: rotate(2.2deg); filter: brightness(.82); }
+.tape__strip span { display: block; white-space: nowrap; font: 400 1.05rem/1 Anton, Archivo, sans-serif; letter-spacing: .18em; text-transform: uppercase; color: #141210; will-change: transform; }
+.tape__strip--b span { font-size: .9rem; }
+
+/* ---------- redaction: a bar that peels off a key phrase when it comes into view ---------- */
+.redact { position: relative; color: var(--text); }
+.js .redact::after {
+  content: ''; position: absolute; left: -.12em; right: -.12em; top: .08em; bottom: .02em;
+  background: linear-gradient(180deg, rgba(255,255,255,.12), transparent), var(--bone);
+  transform-origin: right center; transition: transform 1s var(--ease-io);
+}
+.js .redact.is-open::after { transform: scaleX(0); }
+
+/* ---------- case file: book detail opened from the shelf ---------- */
+.casefile {
+  width: min(980px, calc(100vw - 32px)); max-width: none; max-height: none; padding: 0; border: 0; overflow: visible;
+  background: none; color: var(--text);
+}
+.casefile::backdrop { background: rgba(4,4,5,.8); }
+.casefile__sheet {
+  position: relative; display: grid; grid-template-columns: minmax(200px, 38%) 1fr; gap: 48px; align-items: center;
+  margin-top: 30px; padding: 64px 56px 52px; border: 1px solid var(--line); background: radial-gradient(120% 90% at 20% 0%, #1b1a1c, #0d0d0f 60%);
+  box-shadow: 0 50px 120px -30px rgba(0,0,0,.95);
+}
+.casefile__tab { /* the manila folder tab */
+  position: absolute; left: 40px; top: -36px; margin: 0; padding: 9px 26px 10px; background: var(--manila); color: #1d1810;
+  font: 400 .9rem 'Special Elite', var(--mono); letter-spacing: .08em; clip-path: polygon(10px 0, calc(100% - 10px) 0, 100% 100%, 0 100%); border-radius: 6px 6px 0 0;
+}
+.casefile__close {
+  position: absolute; right: 16px; top: 16px; width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 50%; cursor: pointer; background: transparent;
+  transition: border-color var(--fast), transform .5s var(--ease-out);
+}
+.casefile__close::before, .casefile__close::after { content: ''; position: absolute; left: 13px; right: 13px; top: 21px; height: 1px; background: var(--text); transform: rotate(45deg); }
+.casefile__close::after { transform: rotate(-45deg); }
+.casefile__close:hover { border-color: var(--line-strong); transform: rotate(90deg); }
+.casefile__book { perspective: 1400px; padding: 10px 30px 30px 10px; }
+.b3d--lg { --th: 34px; --ry: -24deg; --rx: 4deg; }
+.casefile__stamp { /* rubber stamp with the series name */
+  display: inline-block; margin: 0 0 26px; padding: 6px 14px; border: 2px solid var(--oxblood); border-radius: 4px; color: var(--oxblood);
+  font: 400 .95rem 'Special Elite', var(--mono); letter-spacing: .12em; text-transform: uppercase; transform: rotate(-6deg); opacity: .9;
+}
+.casefile__title { margin: 0 0 8px; font: 400 clamp(2.4rem, 4.6vw, 4rem)/1 var(--serif); letter-spacing: -.01em; }
+.casefile__sub { margin: 0 0 20px; font: italic 400 1.35rem/1.3 var(--serif); color: var(--text-2); }
+.casefile__sub:empty { display: none; }
+.casefile .lede { margin-bottom: 30px; }
 .book__series { display: block; margin-top: 18px; font: 400 .68rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--text-3); }
 .book__title { display: block; margin-top: 4px; font: 400 1.6rem/1.05 var(--serif); }
 
@@ -382,6 +467,14 @@ main { position: relative; z-index: 2; }
   .cta-row .btn-primary { flex: 1 1 100%; justify-content: space-between; }
   .scroll-hint { display: none; }
   .footer__inner { grid-template-columns: 1fr; }
+  .filters { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+  .filters button { flex: none; }
+  .casefile__sheet { grid-template-columns: 1fr; gap: 28px; padding: 54px 22px 30px; max-height: calc(100svh - 70px); overflow: auto; }
+  .casefile__book { width: 58%; margin: 0 auto; }
+  .casefile__tab { top: 0; left: 22px; padding: 8px 20px; border-radius: 0 0 6px 6px; clip-path: polygon(0 0, 100% 0, calc(100% - 10px) 100%, 10px 100%); }
+  .tape__strip { height: 36px; top: -20px; }
+  .tape__strip--b { height: 30px; top: 4px; }
+  .tape__strip span { font-size: .85rem; }
 }
 /* stacked on a tablet: keep a readable measure and give the photo room */
 @media (min-width: 600px) and (max-width: 1199px) and (max-aspect-ratio: 11/10) {
@@ -443,6 +536,6 @@ main { position: relative; z-index: 2; }
   .eyebrow::before, .scroll-hint i::after { animation: none; }
   .js .hero-in { animation-name: fadeIn; }
   @keyframes fadeIn { from { opacity: 0; } }
-  .btn, .book .cover, .cover--thumb { transition-duration: .2s; }
-  .book a:hover .cover { transform: none; }
+  .btn, .b3d { transition-duration: .2s; }
+  .js .redact::after { display: none; }
 }

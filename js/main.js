@@ -2,7 +2,7 @@
 // the full story, every book and every link, so the page works if this file,
 // the CDN libraries or WebGL fail.
 
-import { BOOKS, bySeries, STACKED } from './data.js';
+import { BOOKS, SERIES, byId, bySeries, STACKED } from './data.js';
 import { ensureFonts, drawCover, drawSpine, loadCoverImage } from './covers.js';
 
 const $ = (s, el = document) => el.querySelector(s);
@@ -212,8 +212,9 @@ async function buildArt() {
   return art;
 }
 
+const coverUrls = {};
 async function fillCovers(art) {
-  const urls = {};
+  const urls = coverUrls;
   await Promise.all(BOOKS.map((b) => new Promise((resolve) => {
     art[b.id].cover.toBlob((blob) => { urls[b.id] = blob ? URL.createObjectURL(blob) : null; resolve(); }, 'image/jpeg', 0.86);
   })));
@@ -226,6 +227,121 @@ async function fillCovers(art) {
     img.src = url;
     el.setAttribute('aria-hidden', 'true');
     el.append(img);
+  });
+}
+
+// ---------- 3D books: every cover gets page edges and a spine ----------
+function makeBooks3d() {
+  $$('.cover[data-cover]').forEach((cover) => {
+    const b = document.createElement('span');
+    b.className = cover.classList.contains('cover--thumb') ? 'b3d b3d--thumb' : 'b3d';
+    b.dataset.series = cover.dataset.series;
+    const spine = document.createElement('span'); spine.className = 'b3d__spine';
+    const pages = document.createElement('span'); pages.className = 'b3d__pages';
+    cover.replaceWith(b);
+    b.append(spine, pages, cover);
+  });
+  if (!finePointer || reducedMotion) return;
+  // on the shelf, a book turns toward the pointer
+  $$('#shelfGrid .book a').forEach((a) => {
+    const b = $('.b3d', a);
+    a.addEventListener('pointermove', (e) => {
+      const r = a.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5;
+      b.style.setProperty('--ry', `${-26 + px * 22}deg`);
+      b.style.setProperty('--rx', `${-py * 10}deg`);
+    });
+    a.addEventListener('pointerleave', () => { b.style.removeProperty('--ry'); b.style.removeProperty('--rx'); });
+  });
+}
+
+// ---------- case file: book detail opened from the shelf ----------
+function setLabel(btn, text) {
+  const spans = $$('.btn__roll > span', btn);
+  if (spans.length) spans.forEach((sp) => { sp.textContent = text; });
+  else $('.btn__label', btn).textContent = text;
+}
+function setupCaseFile() {
+  const dlg = $('#casefile');
+  if (!dlg || typeof dlg.showModal !== 'function') return; // the shelf links still go to Amazon
+  const book3d = $('#cfBook'), cover = $('#cfCover'), buy = $('#cfBuy'), gr = $('#cfGoodreads');
+
+  function open(b, fromEl) {
+    book3d.dataset.series = b.series;
+    cover.dataset.series = b.series;
+    cover.replaceChildren();
+    if (coverUrls[b.id]) {
+      const img = new Image(); img.alt = ''; img.src = coverUrls[b.id]; img.width = 512; img.height = 768;
+      cover.append(img);
+    } else {
+      const t = document.createElement('span'); t.className = 'cover__title'; t.textContent = b.title;
+      cover.append(t);
+    }
+    $('#cfStamp').textContent = SERIES[b.series].name;
+    $('#cfSeries').textContent = b.coauthor ? `${SERIES[b.series].label}, ${b.coauthor}` : SERIES[b.series].label;
+    $('#cfTitle').textContent = b.title;
+    $('#cfSub').textContent = b.subtitle || '';
+    $('#cfTag').textContent = b.tagline;
+    buy.hidden = b.soon;
+    buy.href = b.amazon;
+    gr.href = b.goodreads;
+    setLabel(gr, b.soon ? 'Follow on Goodreads' : 'Goodreads');
+
+    lenis?.stop();
+    dlg.showModal();
+    if (!hasGsap || reducedMotion) return;
+    // the book flies from the shelf into the file
+    const holder = $('.casefile__book', dlg);
+    const from = fromEl.getBoundingClientRect(), to = book3d.getBoundingClientRect();
+    gsap.fromTo(holder, { x: from.left - to.left, y: from.top - to.top, scale: from.width / to.width, transformOrigin: '0 0' },
+      { x: 0, y: 0, scale: 1, duration: 0.95, ease: 'expo.out', clearProps: 'transform' });
+    gsap.from('.casefile__body > :not(.casefile__stamp), .casefile__tab', { autoAlpha: 0, y: 22, duration: 0.7, stagger: 0.06, delay: 0.12, ease: 'power3.out' });
+    gsap.from('#cfStamp', { scale: 1.9, autoAlpha: 0, duration: 0.45, delay: 0.5, ease: 'back.out(2.2)' });
+  }
+
+  $('#shelfGrid').addEventListener('click', (e) => {
+    const a = e.target.closest('.book a');
+    if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    open(byId[a.closest('.book').dataset.book], $('.b3d', a));
+  });
+  $('#cfClose').addEventListener('click', () => dlg.close());
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+  dlg.addEventListener('close', () => lenis?.start());
+}
+
+// ---------- themed details: police tape, redactions, depth ----------
+function setupTheme() {
+  // fill each tape strip with its phrase, repeated well past the screen edge
+  $$('.tape__strip span').forEach((sp) => { sp.textContent = Array(14).fill(sp.textContent.trim()).join('   '); });
+
+  // redaction bars peel off once the phrase is in view
+  const io = 'IntersectionObserver' in window && new IntersectionObserver((entries) => entries.forEach((en) => {
+    if (!en.isIntersecting) return;
+    const el = en.target;
+    setTimeout(() => el.classList.add('is-open'), el.closest('.hero') ? 1400 : 450);
+    io.unobserve(el);
+  }), { threshold: 1, rootMargin: '0px 0px -12% 0px' });
+  $$('.redact').forEach((el) => (io ? io.observe(el) : el.classList.add('is-open')));
+
+  if (!hasGsap || reducedMotion) return;
+  const scrub = (trigger, extra = {}) => ({ trigger, start: 'top bottom', end: 'bottom top', scrub: 0.6, ...extra });
+  // tape slides across as it passes, its two strips in opposite directions
+  $$('.tape').forEach((tape) => {
+    $$('.tape__strip', tape).forEach((strip, i) => {
+      const dir = i ? 1 : -1;
+      gsap.fromTo($('span', strip), { xPercent: -4 * dir - 10 }, { xPercent: 4 * dir - 10, ease: 'none', scrollTrigger: scrub(tape, { start: 'top bottom', end: 'top top' }) });
+      gsap.from(strip, { x: dir * 260, ease: 'none', scrollTrigger: scrub(tape, { start: 'top bottom', end: 'top 55%' }) });
+    });
+  });
+  // headlines drift a little slower than the page; the portrait shifts inside its frame
+  $$('.chapter:not(.josh):not(.hero) .title').forEach((el) => {
+    gsap.fromTo(el, { y: 50 }, { y: -50, ease: 'none', scrollTrigger: scrub(el) });
+  });
+  gsap.fromTo('.portrait picture img', { yPercent: -5, scale: 1.12 }, { yPercent: 5, scale: 1.12, ease: 'none', scrollTrigger: scrub('.portrait') });
+  // list books turn toward the reader as they pass
+  $$('.b3d--thumb').forEach((el) => {
+    gsap.fromTo(el, { '--ry': '-44deg' }, { '--ry': '-8deg', ease: 'none', scrollTrigger: scrub(el, { end: 'center 40%' }) });
   });
 }
 
@@ -254,8 +370,11 @@ if (navigator.clipboard) {
 
 // ---------- boot ----------
 async function boot() {
+  makeBooks3d();
   enhanceButtons();
   setupFilters();
+  setupCaseFile();
+  setupTheme();
   measure();
   onScroll();
   (lenis ? lenis.on.bind(lenis, 'scroll') : (fn) => addEventListener('scroll', fn, { passive: true }))(onScroll);

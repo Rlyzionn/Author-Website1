@@ -89,6 +89,42 @@ function crackCanvas() {
   return c;
 }
 
+// The title page revealed when the hero book opens. Redrawn once the page
+// serif has loaded, so the first frame never waits on a font.
+function titlePageCanvas(book, seriesLabel) {
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 768;
+  const draw = () => {
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#efe6d2'; ctx.fillRect(0, 0, 512, 768);
+    for (let i = 0; i < 2600; i++) { ctx.fillStyle = `rgba(120,96,60,${Math.random() * 0.05})`; ctx.fillRect(Math.random() * 512, Math.random() * 768, 1.4, 1.4); }
+    const g = ctx.createLinearGradient(0, 0, 60, 0);
+    g.addColorStop(0, 'rgba(60,40,20,.28)'); g.addColorStop(1, 'rgba(60,40,20,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 60, 768);
+    ctx.textAlign = 'center'; ctx.fillStyle = '#1b1712';
+    ctx.font = '500 15px Geist, sans-serif';
+    ctx.letterSpacing = '5px';
+    ctx.fillText(seriesLabel.toUpperCase(), 256, 196);
+    ctx.letterSpacing = '0px';
+    const words = book.title.split(' ');
+    const half = Math.ceil(words.length / 2);
+    ctx.font = '400 66px "Instrument Serif", serif';
+    ctx.fillText(words.slice(0, half).join(' '), 256, 300);
+    ctx.font = 'italic 400 66px "Instrument Serif", serif';
+    ctx.fillStyle = '#8f1023';
+    ctx.fillText(words.slice(half).join(' '), 256, 368);
+    ctx.fillStyle = '#1b1712';
+    ctx.fillRect(226, 412, 60, 1.5);
+    ctx.font = '500 17px Geist, sans-serif';
+    ctx.letterSpacing = '6px';
+    ctx.fillText('JOE BROADMEADOW', 256, 470);
+    ctx.letterSpacing = '0px';
+  };
+  draw();
+  const ready = document.fonts.load('66px "Instrument Serif"').then(() => document.fonts.load('15px Geist')).then(draw).catch(() => {});
+  return { canvas: c, ready };
+}
+
 // A soft volumetric cone for the spotlight: brightest at the lamp, fading
 // toward the floor and at the silhouette edges.
 function makeBeam() {
@@ -198,6 +234,7 @@ export function initScene(canvas, art, state) {
   const boardMats = {};
   const boardMat = (series) => (boardMats[series] ||= new THREE.MeshStandardMaterial({ color: PALETTE[series].back, roughness: 0.5, envMapIntensity: 0.5 }));
   const geoCache = {};
+  const endpaperMat = new THREE.MeshStandardMaterial({ color: 0x3a0d14, roughness: 0.85 });
 
   function bookGeos(size) {
     if (geoCache[size]) return geoCache[size];
@@ -210,7 +247,7 @@ export function initScene(canvas, art, state) {
     });
   }
 
-  function makeBook(book, size = 1) {
+  function makeBook(book, size = 1, titlePage = null) {
     const g = bookGeos(size);
     const t = texFor(book);
     const edge = boardMat(book.series);
@@ -220,15 +257,21 @@ export function initScene(canvas, art, state) {
     const spineMat = new THREE.MeshStandardMaterial({ map: t.spine, roughness: 0.45, envMapIntensity: 0.6, side: THREE.DoubleSide });
 
     const book3d = new THREE.Group();
-    const front = new THREE.Mesh(g.board, [edge, edge, edge, edge, coverMat, edge]);
-    front.position.set(g.O / 2, 0, g.D / 2 - g.T / 2);
+    const front = new THREE.Mesh(g.board, [edge, edge, edge, edge, coverMat, titlePage ? endpaperMat : edge]);
+    // the front board hangs on a hinge at the spine so it can swing open
+    const hinge = new THREE.Group();
+    hinge.position.set(-g.W / 2, 0, g.D / 2 - g.T / 2);
+    front.position.set(g.O / 2 + g.W / 2, 0, 0);
+    hinge.add(front);
     const back = new THREE.Mesh(g.board, edge);
     back.position.set(g.O / 2, 0, -g.D / 2 + g.T / 2);
-    const pages = new THREE.Mesh(g.pages, [pagesSideMat, pagesSideMat, pagesTopMat, pagesTopMat, pagesSideMat, pagesSideMat]);
+    const pageFront = titlePage ? new THREE.MeshStandardMaterial({ map: titlePage, color: 0x6e675c, roughness: 1, envMapIntensity: 0.25 }) : pagesSideMat;
+    const pages = new THREE.Mesh(g.pages, [pagesSideMat, pagesSideMat, pagesTopMat, pagesTopMat, pageFront, pagesSideMat]);
     pages.position.x = -g.O * 0.2;
     const spine = new THREE.Mesh(g.spine, spineMat);
     spine.position.x = -g.W / 2;
-    book3d.add(front, back, pages, spine);
+    book3d.add(hinge, back, pages, spine);
+    book3d.userData.hinge = hinge;
     book3d.traverse((m) => { if (m.isMesh) { m.castShadow = high; } });
     book3d.userData.book = book;
     return book3d;
@@ -239,7 +282,10 @@ export function initScene(canvas, art, state) {
 
   // 0 · hero book
   const heroA = anchor();
-  const heroBook = makeBook(byId.pieces, 1.25);
+  const heroTitle = titlePageCanvas(byId.pieces, 'A Josh Williams Novel');
+  const heroTitleTex = tex(heroTitle.canvas);
+  heroTitle.ready.then(() => { heroTitleTex.needsUpdate = true; });
+  const heroBook = makeBook(byId.pieces, 1.25, heroTitleTex);
   heroA.add(heroBook);
 
   // 1 · police badge
@@ -470,9 +516,13 @@ export function initScene(canvas, art, state) {
     // 0 hero
     // on phones the headline scrolls up into the book's space, so the book is
     // gone by the time the text reaches it (the hero is taller than the screen there)
-    const vHero = (L.mobile ? 1 - ease(clamp(state.heroScroll / 0.28)) : win(s, -1, 0, 0.62, 0.88)) * intro;
+    const vHero = (L.mobile ? 1 - ease(clamp((state.heroScroll - 0.1) / 0.24)) : win(s, -1, 0, 0.7, 0.92)) * intro;
     place(heroA, vHero, 1, { y: bob });
-    heroBook.rotation.set(0.1 + cur.my * 0.12, -0.6 + (s - 0.5) * 1.6 + cur.mx * 0.22 + (1 - intro) * 2.2, -0.05);
+    // the first scroll opens the book to its title page
+    const open = ease(clamp(L.mobile ? state.heroScroll / 0.16 : (s - 0.5) / 0.2));
+    heroBook.userData.hinge.rotation.y = -open * 2.1;
+    heroBook.rotation.set(0.1 + cur.my * 0.12, lerp(-0.6, 0.18, open) + cur.mx * 0.22 + (1 - intro) * 2.2, -0.05 * (1 - open));
+    heroBook.position.x = open * 0.35;
     // police lights breathe slowly instead of strobing
     const sweep = 0.5 + 0.5 * Math.sin(t * 1.6 * motion);
     sirenR.intensity = vHero * 7 * sweep;

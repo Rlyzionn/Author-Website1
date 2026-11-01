@@ -62,7 +62,7 @@
         <div class="col">
           <p class="eyebrow hero-in" style="--d:0">Crime fiction, true crime and fantasy</p>
           <h1 class="display hero-in" style="--d:1">Stories <em>forged</em><br>in truth.</h1>
-          <p class="lede hero-in" style="--d:2">Joe Broadmeadow spent twenty years with the East Providence Police Department, rose to captain and commanded its detectives. Now he writes it down, with the detail of someone who stood at the scene.</p>
+          <p class="lede hero-in" style="--d:2">Joe Broadmeadow spent twenty years with the East Providence Police Department, <span class="redact">rose to captain</span> and commanded its detectives. Now he writes it down, with the detail of someone who stood at the scene.</p>
           <div class="cta-row hero-in" style="--d:3">
             <a class="btn btn-primary" href="#shelf" data-magnetic>
               <span class="btn__label">Find your first case</span>
@@ -103,7 +103,7 @@
             </figure>
             <div class="bio__text">
               <p class="bio__lead">Joe joined the East Providence Police Department in 1978 and spent the next twenty years working its streets and its cases.</p>
-              <p>He commanded the Investigative Services Division and served on the Organized Crime Drug Enforcement Task Force alongside the FBI and DEA. He retired in 1998 as a captain. That is why his procedure is right, and why the moral lines in his books blur the way they do in real cases.</p>
+              <p>He commanded the Investigative Services Division and served on the <span class="redact">Organized Crime Drug Enforcement Task Force</span> alongside the FBI and DEA. He retired in 1998 as a captain. That is why his procedure is right, and why the moral lines in his books blur the way they do in real cases.</p>
               <p>He always wrote, sending pieces to newspapers and magazines while still on the job. After retiring, and with a push from his wife, Susan, he started writing books in earnest.</p>
             </div>
           </div>
@@ -127,12 +127,13 @@
 
     <!-- SOLUTION: the novels (sticky; the 3D shelf turns with scroll) -->
     <section class="chapter josh" id="josh" data-name="Josh Williams" data-side="left">
+      <div class="tape" aria-hidden="true"><div class="tape__strip"><span>Crime scene do not cross</span></div><div class="tape__strip tape__strip--b"><span>Police line do not cross</span></div></div>
       <div class="sticky">
         <div class="wrap">
           <div class="col">
             <p class="label" data-reveal>Crime fiction</p>
             <h2 class="title" data-split>The Josh Williams <em>novels</em></h2>
-            <p class="lede lede--sm" data-reveal>Detective Lt. Josh Williams, East Providence PD. Cold cases, hot tempers and a city that keeps its secrets. Keep scrolling to turn the shelf.</p>
+            <p class="lede lede--sm" data-reveal>Detective Lt. Josh Williams, East Providence PD. Cold cases, hot tempers and a city that <span class="redact">keeps its secrets.</span> Keep scrolling to turn the shelf.</p>
             <article class="feature" data-reveal aria-live="polite">
               <div class="feature__pips" id="joshPips" aria-hidden="true"><i class="is-on"></i><i></i><i></i><i></i><i></i></div>
               <div class="feature__body" id="joshBody">
@@ -183,11 +184,12 @@
 
     <!-- EVIDENCE: true crime -->
     <section class="chapter truecrime" id="truecrime" data-name="True Crime" data-side="left">
+      <div class="tape" aria-hidden="true"><div class="tape__strip"><span>Crime scene do not cross</span></div><div class="tape__strip tape__strip--b"><span>Police line do not cross</span></div></div>
       <div class="wrap">
         <div class="col">
           <p class="label" data-reveal>True crime</p>
           <h2 class="title" data-split>Told by the people <em>who were there.</em></h2>
-          <p class="lede lede--sm" data-reveal>Books written with insiders from both sides of the badge, including some of the most candid accounts of the New England mob in print.</p>
+          <p class="lede lede--sm" data-reveal>Books written with insiders from both sides of the badge, including some of the most candid accounts of <span class="redact">the New England mob</span> in print.</p>
           <ul class="list" data-reveal>
             <li class="list__item">
               <span class="cover cover--thumb" data-cover="wayitwas" data-series="true"><span class="cover__title">It’s Just the Way It Was</span></span>
@@ -415,6 +417,33 @@
       </div>
     </section>
   </main>
+
+  <!-- Book detail, opened from the shelf. Filled in by js/main.js. -->
+  <dialog class="casefile" id="casefile" aria-labelledby="cfTitle">
+    <div class="casefile__sheet" data-lenis-prevent>
+      <p class="casefile__tab">Case file</p>
+      <button class="casefile__close" type="button" id="cfClose" aria-label="Close"></button>
+      <div class="casefile__book">
+        <span class="b3d b3d--lg" id="cfBook"><span class="b3d__spine"></span><span class="b3d__pages"></span><span class="cover" id="cfCover"></span></span>
+      </div>
+      <div class="casefile__body">
+        <p class="casefile__stamp" id="cfStamp"></p>
+        <p class="label" id="cfSeries"></p>
+        <h2 class="casefile__title" id="cfTitle"></h2>
+        <p class="casefile__sub" id="cfSub"></p>
+        <p class="lede" id="cfTag"></p>
+        <div class="cta-row">
+          <a class="btn btn-primary" id="cfBuy" href="#" target="_blank" rel="noopener">
+            <span class="btn__label">Buy on Amazon</span>
+            <span class="btn__icon" aria-hidden="true"></span>
+          </a>
+          <a class="btn btn-link" id="cfGoodreads" href="#" target="_blank" rel="noopener">
+            <span class="btn__label">Goodreads</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </dialog>
 
   <footer class="footer">
     <div class="wrap wrap--wide footer__inner">
