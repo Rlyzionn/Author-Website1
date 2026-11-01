@@ -64,12 +64,13 @@ function onScroll() {
   state.s = s;
 
   state.joshP = clamp((y - layout.josh.top) / (layout.josh.h - vh));
-  setJosh(Math.round(state.joshP * (josh.length - 1)));
+  // a little hysteresis so the book can't flip back and forth at a boundary
+  const at = state.joshP * (josh.length - 1);
+  if (joshIndex === -1 || Math.abs(at - joshIndex) > 0.6) setJosh(Math.round(at));
 
   state.trailP = clamp(((mid - layout.trail.top) / layout.trail.h) * 1.35 - 0.12);
   const miles = Math.round(state.trailP * 2185).toLocaleString('en-US');
   if (milesEl.textContent !== miles) milesEl.textContent = miles;
-  state.lastScroll = performance.now();
 
   const c = Math.min(chapters.length - 1, Math.floor(s));
   if (c !== chapter) setChapter(c);
@@ -101,7 +102,7 @@ function setJosh(i) {
   $('#joshGoodreads').href = b.goodreads;
   $$('#joshTicks a').forEach((a, k) => a.classList.toggle('is-active', k === i));
   if (hasGsap && !reducedMotion && !first) {
-    gsap.fromTo('#joshBody', { autoAlpha: 0, y: 14, filter: 'blur(6px)' }, { autoAlpha: 1, y: 0, filter: 'blur(0px)', duration: 0.6, ease: 'power3.out', overwrite: true });
+    gsap.fromTo('#joshBody', { opacity: 0.25, y: 10 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out', overwrite: true });
   }
 }
 $$('#joshTicks a').forEach((a) => a.addEventListener('click', (e) => {
@@ -277,7 +278,7 @@ async function boot() {
     statusEl.classList.add('is-done');
     return;
   }
-  await stage.start();
+  await stage.start(hasGsap ? gsap.ticker : null);
   $('#stage').classList.add('is-ready');
   setStatus('Stage ready');
   setTimeout(() => statusEl.classList.add('is-done'), 600);

@@ -401,9 +401,10 @@ export function initScene(canvas, art, state) {
 
   // ---------- layout ----------
   const L = { objX: 1.6, yOff: 0, scale: 1, mobile: false };
+  let maxPR = high ? 1.5 : 1.25; // lowered at runtime by adaptQuality()
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, high ? 1.75 : 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPR));
     renderer.setSize(w, h, false);
     if (composer) {
       composer.setPixelRatio(renderer.getPixelRatio());
@@ -437,15 +438,13 @@ export function initScene(canvas, art, state) {
   const focus = new THREE.Vector3(1.6, 0, 0);
   const tmpV = new THREE.Vector3();
   const down = new THREE.Vector3(0, -1, 0);
-  let frameNo = 0;
   let onFirstFrame = null;
 
   function frame() {
-    requestAnimationFrame(frame);
     const dt = Math.min(clock.getDelta(), 0.05);
     const t = clock.elapsedTime;
     // Lenis already smooths the scroll, so the stage only adds a light follow
-    const k = state.reduced ? 1 : 1 - Math.exp(-dt * 9);
+    const k = state.reduced ? 1 : 1 - Math.exp(-dt * 14);
     cur.s = lerp(cur.s, state.s, k);
     cur.josh = lerp(cur.josh, state.joshP, k);
     cur.trail = lerp(cur.trail, state.trailP, k);
@@ -569,18 +568,42 @@ export function initScene(canvas, art, state) {
     motes.rotation.y = t * 0.02 * motion + s * 0.15;
     motes.position.y = -s * 0.25;
 
-    // nothing on stage (e.g. the book grid): drop to a third of the frame rate
-    frameNo++;
-    if (onStage < 0.01 && !trailA.visible && frameNo % 3) return;
-    // when the reader pauses, idle motion only needs half the frame rate
-    if (performance.now() - (state.lastScroll || 0) > 1500 && frameNo % 2) return;
+    // nothing on stage and the scroll has settled (e.g. the book grid): the
+    // frame would not change, so skip it rather than throttle the frame rate
+    const settled = Math.abs(cur.s - state.s) < 1e-4;
+    if (onStage < 0.002 && !trailA.visible && settled && !onFirstFrame) return;
+    if (t > 2) adaptQuality(dt);
     composer ? composer.render() : renderer.render(scene, camera);
     if (onFirstFrame) { onFirstFrame(); onFirstFrame = null; }
   }
 
+  // If the machine can't hold ~50fps, lower the resolution step by step and
+  // finally drop bloom, instead of stuttering.
+  let pr = renderer.getPixelRatio(), slow = 0;
+  function adaptQuality(dt) {
+    if (document.hidden) return; // background tabs are throttled, not slow
+    slow = dt > 1 / 50 ? slow + 1 : Math.max(0, slow - 2);
+    if (slow < 45) return;
+    slow = 0;
+    if (pr > 1) {
+      pr = Math.max(1, pr - 0.25);
+      renderer.setPixelRatio(pr);
+      if (composer) composer.setPixelRatio(pr);
+      maxPR = pr;
+    } else if (composer) {
+      composer = null;
+    }
+  }
+
+  function loop() { requestAnimationFrame(loop); frame(); }
   return {
-    start() {
-      return new Promise((resolve) => { onFirstFrame = resolve; requestAnimationFrame(frame); });
+    // Pass GSAP's ticker so the stage renders in the same tick, right after
+    // Lenis moves the page; otherwise the 3D can trail the text by a frame.
+    start(ticker) {
+      return new Promise((resolve) => {
+        onFirstFrame = resolve;
+        if (ticker) ticker.add(frame); else requestAnimationFrame(loop);
+      });
     },
   };
 }
