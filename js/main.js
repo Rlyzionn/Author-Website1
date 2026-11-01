@@ -17,7 +17,7 @@ const snap = params.has('snap');
 const finePointer = matchMedia('(pointer: fine)').matches;
 // phones get the low-cost renderer in either orientation
 const phone = !finePointer && Math.min(screen.width, screen.height) < 600;
-const state = { s: 0.5, joshP: 0, trailP: 0, mx: 0, my: 0, intro: 0, reduced: reducedMotion || snap, mobile: matchMedia(STACKED).matches, lite: params.has('lite') || phone };
+const state = { s: 0.5, heroScroll: 0, joshP: 0, trailP: 0, mx: 0, my: 0, intro: 0, reduced: reducedMotion || snap, mobile: matchMedia(STACKED).matches, lite: params.has('lite') || phone };
 
 const chapters = $$('.chapter');
 const josh = bySeries('josh');
@@ -62,6 +62,7 @@ function onScroll() {
   let s = 0;
   layout.chapters.forEach((c, i) => { if (mid >= c.top) s = i + clamp((mid - c.top) / c.h); });
   state.s = s;
+  state.heroScroll = y / vh;
 
   state.joshP = clamp((y - layout.josh.top) / (layout.josh.h - vh));
   // a little hysteresis so the book can't flip back and forth at a boundary

@@ -427,7 +427,8 @@ export function initScene(canvas, art, state) {
     if (!g.visible) return;
     const out = 1 - v;
     const x = L.mobile ? 0 : L.objX * side;
-    g.position.set(x + (L.mobile ? 0 : out * side * 2.2), y + L.yOff - out * (L.mobile ? 1.4 : 0.35), -out * 1.6);
+    // on phones the text scrolls up underneath, so recede in place rather than slide into it
+    g.position.set(x + (L.mobile ? 0 : out * side * 2.2), y + L.yOff - out * (L.mobile ? 0 : 0.35), -out * 1.6);
     g.scale.setScalar(scale * L.scale * (0.55 + 0.45 * v));
   }
 
@@ -439,6 +440,7 @@ export function initScene(canvas, art, state) {
   const tmpV = new THREE.Vector3();
   const down = new THREE.Vector3(0, -1, 0);
   let onFirstFrame = null;
+  let drewEmpty = false;
 
   function frame() {
     const dt = Math.min(clock.getDelta(), 0.05);
@@ -466,7 +468,9 @@ export function initScene(canvas, art, state) {
     camera.lookAt(0, 0, 0);
 
     // 0 hero
-    const vHero = win(s, -1, 0, 0.62, 0.88) * intro;
+    // on phones the headline scrolls up into the book's space, so the book is
+    // gone by the time the text reaches it (the hero is taller than the screen there)
+    const vHero = (L.mobile ? 1 - ease(clamp(state.heroScroll / 0.28)) : win(s, -1, 0, 0.62, 0.88)) * intro;
     place(heroA, vHero, 1, { y: bob });
     heroBook.rotation.set(0.1 + cur.my * 0.12, -0.6 + (s - 0.5) * 1.6 + cur.mx * 0.22 + (1 - intro) * 2.2, -0.05);
     // police lights breathe slowly instead of strobing
@@ -571,7 +575,10 @@ export function initScene(canvas, art, state) {
     // nothing on stage and the scroll has settled (e.g. the book grid): the
     // frame would not change, so skip it rather than throttle the frame rate
     const settled = Math.abs(cur.s - state.s) < 1e-4;
-    if (onStage < 0.002 && !trailA.visible && settled && !onFirstFrame) return;
+    // (only once the empty stage has been drawn, or the last image would stay on screen)
+    const empty = onStage < 0.002 && !trailA.visible && settled;
+    if (empty && drewEmpty && !onFirstFrame) return;
+    drewEmpty = empty;
     if (t > 2) adaptQuality(dt);
     composer ? composer.render() : renderer.render(scene, camera);
     if (onFirstFrame) { onFirstFrame(); onFirstFrame = null; }
