@@ -521,7 +521,7 @@ export function initScene(canvas, art, state) {
     // the first scroll opens the book to its title page
     const open = ease(clamp(L.mobile ? state.heroScroll / 0.16 : (s - 0.5) / 0.2));
     heroBook.userData.hinge.rotation.y = -open * 2.1;
-    heroBook.rotation.set(0.1 + cur.my * 0.12, lerp(-0.6, 0.18, open) + cur.mx * 0.22 + (1 - intro) * 2.2, -0.05 * (1 - open));
+    heroBook.rotation.set(0.1 + cur.my * 0.12, lerp(-0.6, 0.18, open) + cur.mx * 0.22 + (1 - intro) * 2.2 + (state.spin || 0), -0.05 * (1 - open));
     heroBook.position.x = open * 0.35;
     // police lights breathe slowly instead of strobing
     const sweep = 0.5 + 0.5 * Math.sin(t * 1.6 * motion);

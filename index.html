@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Joe Broadmeadow | Stories Forged in Truth</title>
   <meta name="description" content="Crime fiction, true crime and fantasy from Joe Broadmeadow, a retired East Providence police captain with twenty years on the job.">
   <meta name="theme-color" content="#070708">
@@ -80,6 +80,7 @@
         </div>
       </div>
       <a class="scroll-hint" href="#about"><span>Scroll</span><i aria-hidden="true"></i></a>
+      <p class="hero__touch" aria-hidden="true"><i></i>Drag to turn the book</p>
     </section>
 
     <!-- CONTEXT: the author -->
@@ -133,7 +134,8 @@
           <div class="col">
             <p class="label" data-reveal>Crime fiction</p>
             <h2 class="title" data-split>The Josh Williams <em>novels</em></h2>
-            <p class="lede lede--sm" data-reveal>Detective Lt. Josh Williams, East Providence PD. Cold cases, hot tempers and a city that <span class="redact">keeps its secrets.</span> Keep scrolling to turn the shelf.</p>
+            <p class="lede lede--sm" data-reveal>Detective Lt. Josh Williams, East Providence PD. Cold cases, hot tempers and a city that <span class="redact">keeps its secrets.</span> <span class="on-wide">Keep scrolling to turn the shelf.</span><span class="on-phone">Swipe the cards to turn the shelf.</span></p>
+            <div class="jcards" id="jcards" role="group" aria-label="Josh Williams novels, swipe to browse"></div>
             <article class="feature" data-reveal aria-live="polite">
               <div class="feature__pips" id="joshPips" aria-hidden="true"><i class="is-on"></i><i></i><i></i><i></i><i></i></div>
               <div class="feature__body" id="joshBody">
@@ -297,6 +299,7 @@
         </div>
 
         <!-- The bibliography. js/data.js reads these items, so this list is the single source of truth. -->
+        <p class="shelf__hint" aria-hidden="true">Swipe the shelf, tap a book to open its file</p>
         <ul class="shelf__grid" id="shelfGrid">
           <li class="book" data-book="collision" data-series="josh" data-motif="redblue" data-goodreads="https://www.goodreads.com/search?q=Collision+Course+Broadmeadow" data-tagline="Where the law and the street meet head-on, Detective Lt. Josh Williams has to pick a lane.">
             <a href="https://www.amazon.com/s?k=Collision+Course+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
@@ -418,9 +421,25 @@
     </section>
   </main>
 
+  <!-- Phone dock: current chapter, progress and a chapter list within thumb reach -->
+  <nav class="dock" id="dock" aria-label="Chapters">
+    <div class="dock__sheet" id="dockSheet" inert>
+      <ol class="dock__list" id="dockList"></ol>
+    </div>
+    <div class="dock__row">
+      <button class="dock__chapter" id="dockChapter" type="button" aria-expanded="false" aria-controls="dockSheet">
+        <svg class="dock__ring" viewBox="0 0 36 36" aria-hidden="true"><circle cx="18" cy="18" r="15" /><circle class="dock__ring-fill" id="dockRing" cx="18" cy="18" r="15" /></svg>
+        <span class="dock__name"><span id="dockName">Opening</span></span>
+        <span class="dock__chev" aria-hidden="true"></span>
+      </button>
+      <a class="btn btn-primary btn-sm" href="#shelf"><span class="btn__label">Books</span></a>
+    </div>
+  </nav>
+
   <!-- Book detail, opened from the shelf. Filled in by js/main.js. -->
   <dialog class="casefile" id="casefile" aria-labelledby="cfTitle">
     <div class="casefile__sheet" data-lenis-prevent>
+      <div class="casefile__grab" id="cfGrab" aria-hidden="true"></div>
       <p class="casefile__tab">Case file</p>
       <button class="casefile__close" type="button" id="cfClose" aria-label="Close"></button>
       <div class="casefile__book">

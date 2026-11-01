@@ -17,7 +17,7 @@ const snap = params.has('snap');
 const finePointer = matchMedia('(pointer: fine)').matches;
 // phones get the low-cost renderer in either orientation
 const phone = !finePointer && Math.min(screen.width, screen.height) < 600;
-const state = { s: 0.5, heroScroll: 0, joshP: 0, trailP: 0, mx: 0, my: 0, intro: 0, reduced: reducedMotion || snap, mobile: matchMedia(STACKED).matches, lite: params.has('lite') || phone };
+const state = { s: 0.5, heroScroll: 0, spin: 0, joshP: 0, trailP: 0, mx: 0, my: 0, intro: 0, reduced: reducedMotion || snap, mobile: matchMedia(STACKED).matches, lite: params.has('lite') || phone };
 
 const chapters = $$('.chapter');
 const josh = bySeries('josh');
@@ -64,10 +64,13 @@ function onScroll() {
   state.s = s;
   state.heroScroll = y / vh;
 
-  state.joshP = clamp((y - layout.josh.top) / (layout.josh.h - vh));
-  // a little hysteresis so the book can't flip back and forth at a boundary
-  const at = state.joshP * (josh.length - 1);
-  if (joshIndex === -1 || Math.abs(at - joshIndex) > 0.6) setJosh(Math.round(at));
+  // on phones the swipe cards turn the Josh shelf instead of the page scroll
+  if (!state.mobile) {
+    state.joshP = clamp((y - layout.josh.top) / (layout.josh.h - vh));
+    // a little hysteresis so the book can't flip back and forth at a boundary
+    const at = state.joshP * (josh.length - 1);
+    if (joshIndex === -1 || Math.abs(at - joshIndex) > 0.6) setJosh(Math.round(at));
+  }
 
   state.trailP = clamp(((mid - layout.trail.top) / layout.trail.h) * 1.35 - 0.12);
   const miles = Math.round(state.trailP * 2185).toLocaleString('en-US');
@@ -76,7 +79,10 @@ function onScroll() {
   const c = Math.min(chapters.length - 1, Math.floor(s));
   if (c !== chapter) setChapter(c);
 
-  $('#scrollLine').style.transform = `scaleX(${clamp(y / layout.max)})`;
+  const progress = clamp(y / layout.max);
+  $('#scrollLine').style.transform = `scaleX(${progress})`;
+  dockRing.style.strokeDashoffset = 94.25 * (1 - progress);
+  dock.classList.toggle('is-in', y > vh * 0.55);
   nav.classList.toggle('is-solid', y > 40);
   nav.classList.toggle('is-hidden', y > lastY + 2 && y > vh * 0.7);
   if (y < lastY - 2) nav.classList.remove('is-hidden');
@@ -88,6 +94,138 @@ function setChapter(c) {
   document.body.dataset.chapter = c;
   const id = chapters[c].id;
   $$('.nav__links a').forEach((a) => a.classList.toggle('is-active', a.hash === `#${id}` || (id === 'hawk' && a.hash === '#josh')));
+  $$('#dockList button').forEach((b, i) => b.classList.toggle('is-current', i === c));
+  const name = $('#dockName');
+  name.textContent = chapters[c].dataset.name;
+  if (hasGsap && !reducedMotion) gsap.fromTo(name, { yPercent: 110 }, { yPercent: 0, duration: 0.5, ease: 'power3.out' });
+}
+
+// a tiny tick under the thumb on phones that support it
+// (browsers only allow it after the visitor has touched the page)
+const haptic = () => { if (state.mobile && navigator.vibrate && navigator.userActivation?.hasBeenActive) navigator.vibrate(6); };
+
+// ---------- phone dock: chapter, progress and a chapter list ----------
+const dock = $('#dock');
+const dockRing = $('#dockRing');
+function setupDock() {
+  const btn = $('#dockChapter'), sheet = $('#dockSheet'), list = $('#dockList');
+  chapters.forEach((c, i) => {
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = c.dataset.name;
+    b.addEventListener('click', () => { toggle(false); scrollToY(layout.chapters[i].top + (i ? 2 : 0)); });
+    li.append(b);
+    list.append(li);
+  });
+  function toggle(open) {
+    dock.classList.toggle('is-open', open);
+    btn.setAttribute('aria-expanded', open);
+    sheet.inert = !open;
+  }
+  btn.addEventListener('click', () => toggle(!dock.classList.contains('is-open')));
+  document.addEventListener('click', (e) => { if (!dock.contains(e.target)) toggle(false); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') toggle(false); });
+}
+
+// ---------- phones: swipe cards that turn the Josh Williams shelf ----------
+function setupJoshCards() {
+  const wrap = $('#jcards');
+  josh.forEach((b) => {
+    const card = document.createElement('article');
+    card.className = 'jcard';
+    const series = document.createElement('p'); series.className = 'jcard__series'; series.textContent = 'A Josh Williams novel';
+    const title = document.createElement('h3'); title.className = 'jcard__title'; title.textContent = b.title;
+    const tag = document.createElement('p'); tag.className = 'jcard__tag'; tag.textContent = b.tagline;
+    const links = document.createElement('p'); links.className = 'jcard__links';
+    [['Buy on Amazon', b.amazon], ['Goodreads', b.goodreads]].forEach(([text, href]) => {
+      const a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = text;
+      links.append(a);
+    });
+    card.append(series, title, tag, links);
+    wrap.append(card);
+  });
+  const cards = $$('.jcard', wrap);
+  let current = -1, raf = 0;
+  const update = () => {
+    raf = 0;
+    const max = wrap.scrollWidth - wrap.clientWidth;
+    if (state.mobile) state.joshP = max > 0 ? clamp(wrap.scrollLeft / max) : 0;
+    const i = Math.round(clamp(wrap.scrollLeft / Math.max(1, max)) * (cards.length - 1));
+    if (i === current) return;
+    if (current !== -1) haptic();
+    current = i;
+    cards.forEach((c, k) => c.classList.toggle('is-on', k === i));
+  };
+  wrap.addEventListener('scroll', () => { raf ||= requestAnimationFrame(update); }, { passive: true });
+  update();
+}
+
+// ---------- phones: the shelf is a coverflow ----------
+function setupCoverflow() {
+  const grid = $('#shelfGrid');
+  let raf = 0, current = null, flowing = false;
+  const update = () => {
+    raf = 0;
+    const items = $$('.book', grid).filter((li) => !li.hidden);
+    if (!state.mobile) {
+      if (flowing) items.forEach((li) => { $('a', li).style.cssText = ''; $('.b3d', li).style.removeProperty('--ry'); delete li.dataset.d; });
+      flowing = false;
+      return;
+    }
+    flowing = true;
+    const r = grid.getBoundingClientRect(), cx = r.left + r.width / 2;
+    let best = null, bestD = 9;
+    items.forEach((li) => {
+      const b = li.getBoundingClientRect();
+      const d = clamp(((b.left + b.width / 2) - cx) / (r.width * 0.6), -1, 1);
+      const a = Math.abs(d);
+      li.dataset.d = d.toFixed(3);
+      $('a', li).style.cssText = `transform: translateY(${a * 22}px) scale(${1 - a * 0.2}); opacity: ${1 - a * 0.55}`;
+      // books beside the centre turn their faces in toward it
+      $('.b3d', li).style.setProperty('--ry', `${d * 48 - (1 - a) * 12}deg`);
+      if (a < bestD) { bestD = a; best = li; }
+    });
+    if (best !== current) { if (current) haptic(); current = best; }
+  };
+  grid.addEventListener('scroll', () => { raf ||= requestAnimationFrame(update); }, { passive: true });
+  addEventListener('resize', () => { raf ||= requestAnimationFrame(update); });
+  $('#filters').addEventListener('click', () => setTimeout(() => { grid.scrollLeft = 0; update(); }, 760));
+  update();
+}
+
+// ---------- phones: drag across the hero to turn the book ----------
+function setupHeroSpin() {
+  if (reducedMotion) return;
+  const hero = $('#hero');
+  let x0 = null, y0 = 0, x1 = 0, active = false;
+  hero.addEventListener('touchstart', (e) => {
+    if (!state.mobile) return;
+    const t = e.touches[0];
+    if (t.clientY > innerHeight * 0.55) return; // the book sits in the top half
+    x0 = x1 = t.clientX; y0 = t.clientY; active = false;
+    if (hasGsap) gsap.killTweensOf(state, 'spin');
+  }, { passive: true });
+  hero.addEventListener('touchmove', (e) => {
+    if (x0 === null) return;
+    const t = e.touches[0];
+    const dx = t.clientX - x1, tx = t.clientX - x0, ty = t.clientY - y0;
+    x1 = t.clientX;
+    if (!active && Math.abs(tx) > 8 && Math.abs(tx) > Math.abs(ty)) { active = true; hero.classList.add('is-touched'); }
+    if (active) state.spin += dx / 70;
+  }, { passive: true });
+  const release = () => {
+    if (x0 === null) return;
+    x0 = null;
+    if (!active) return;
+    // settle back to the cover by the shortest way round
+    const turn = Math.PI * 2;
+    state.spin = ((state.spin % turn) + turn * 1.5) % turn - turn / 2;
+    if (hasGsap) gsap.to(state, { spin: 0, duration: 1.6, ease: 'elastic.out(1, 0.45)' });
+    else state.spin = 0;
+  };
+  hero.addEventListener('touchend', release, { passive: true });
+  hero.addEventListener('touchcancel', release, { passive: true });
 }
 
 // ---------- Josh Williams feature ----------
@@ -264,7 +402,7 @@ function setLabel(btn, text) {
 function setupCaseFile() {
   const dlg = $('#casefile');
   if (!dlg || typeof dlg.showModal !== 'function') return; // the shelf links still go to Amazon
-  const book3d = $('#cfBook'), cover = $('#cfCover'), buy = $('#cfBuy'), gr = $('#cfGoodreads');
+  const book3d = $('#cfBook'), cover = $('#cfCover'), buy = $('#cfBuy'), gr = $('#cfGoodreads'), sheet = $('.casefile__sheet', dlg);
 
   function open(b, fromEl) {
     book3d.dataset.series = b.series;
@@ -289,7 +427,16 @@ function setupCaseFile() {
 
     lenis?.stop();
     dlg.showModal();
+    haptic();
     if (!hasGsap || reducedMotion) return;
+    if (state.mobile) {
+      // phones: the file slides up from the bottom like a native sheet
+      gsap.fromTo(sheet, { y: innerHeight }, { y: 0, duration: 0.6, ease: 'expo.out' });
+      gsap.from('.casefile__book', { y: 40, rotation: -4, duration: 0.9, delay: 0.1, ease: 'expo.out' });
+      gsap.from('.casefile__body > :not(.casefile__stamp)', { autoAlpha: 0, y: 18, duration: 0.6, stagger: 0.05, delay: 0.18, ease: 'power3.out' });
+      gsap.from('#cfStamp', { scale: 1.9, autoAlpha: 0, duration: 0.45, delay: 0.45, ease: 'back.out(2.2)' });
+      return;
+    }
     // the book flies from the shelf into the file
     const holder = $('.casefile__book', dlg);
     const from = fromEl.getBoundingClientRect(), to = book3d.getBoundingClientRect();
@@ -303,11 +450,45 @@ function setupCaseFile() {
     const a = e.target.closest('.book a');
     if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
-    open(byId[a.closest('.book').dataset.book], $('.b3d', a));
+    const li = a.closest('.book');
+    // in the phone coverflow, tapping a side book brings it to the centre first
+    if (state.mobile && Math.abs(+li.dataset.d || 0) > 0.2) {
+      li.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
+      return;
+    }
+    open(byId[li.dataset.book], $('.b3d', a));
   });
-  $('#cfClose').addEventListener('click', () => dlg.close());
-  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+
+  // closing slides the sheet away on phones
+  function close() {
+    if (!dlg.open) return;
+    if (!state.mobile || !hasGsap || reducedMotion) { dlg.close(); return; }
+    gsap.to(sheet, { y: sheet.offsetHeight + 40, duration: 0.35, ease: 'power3.in', onComplete: () => { dlg.close(); gsap.set(sheet, { clearProps: 'transform' }); } });
+  }
+  $('#cfClose').addEventListener('click', close);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) close(); });
+  dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
   dlg.addEventListener('close', () => lenis?.start());
+
+  // drag the handle down to dismiss
+  const grab = $('#cfGrab');
+  let y0 = null, dy = 0, t0 = 0;
+  grab.addEventListener('pointerdown', (e) => { y0 = e.clientY; dy = 0; t0 = performance.now(); grab.setPointerCapture(e.pointerId); });
+  grab.addEventListener('pointermove', (e) => {
+    if (y0 === null) return;
+    dy = Math.max(0, e.clientY - y0);
+    sheet.style.transform = `translateY(${dy}px)`;
+  });
+  const drop = () => {
+    if (y0 === null) return;
+    y0 = null;
+    const fast = dy / Math.max(1, performance.now() - t0) > 0.6;
+    if (dy > 110 || (fast && dy > 30)) close();
+    else if (hasGsap) gsap.fromTo(sheet, { y: dy }, { y: 0, duration: 0.45, ease: 'back.out(1.6)', onStart: () => { sheet.style.transform = ''; } });
+    else sheet.style.transform = '';
+  };
+  grab.addEventListener('pointerup', drop);
+  grab.addEventListener('pointercancel', drop);
 }
 
 // ---------- themed details: police tape, redactions, depth ----------
@@ -375,6 +556,10 @@ async function boot() {
   setupFilters();
   setupCaseFile();
   setupTheme();
+  setupDock();
+  setupJoshCards();
+  setupCoverflow();
+  setupHeroSpin();
   measure();
   onScroll();
   (lenis ? lenis.on.bind(lenis, 'scroll') : (fn) => addEventListener('scroll', fn, { passive: true }))(onScroll);
