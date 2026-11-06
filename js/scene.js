@@ -125,6 +125,42 @@ function titlePageCanvas(book, seriesLabel) {
   return { canvas: c, ready };
 }
 
+// Grey-scale detail maps drawn once: smudges for the floor, a cloth weave
+// for the boards, fine wear for the cover laminate. They multiply roughness,
+// so they stay light (about 0.6 to 1) and never make a surface mirror-smooth
+// under the strong key light.
+function detailCanvas(size, paint) {
+  const c = document.createElement('canvas');
+  c.width = c.height = size;
+  paint(c.getContext('2d'), size);
+  return c;
+}
+const smudges = (ctx, S) => {
+  ctx.fillStyle = '#e2e2e2'; ctx.fillRect(0, 0, S, S);
+  for (let i = 0; i < 70; i++) {
+    const x = Math.random() * S, y = Math.random() * S, r = 20 + Math.random() * 120;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    const v = Math.random() < 0.5 ? 255 : 150;
+    g.addColorStop(0, `rgba(${v},${v},${v},${0.1 + Math.random() * 0.2})`); g.addColorStop(1, `rgba(${v},${v},${v},0)`);
+    ctx.fillStyle = g; ctx.fillRect(x - r, y - r, r * 2, r * 2);
+  }
+  for (let i = 0; i < 9000; i++) { const v = 170 + Math.random() * 85 | 0; ctx.fillStyle = `rgba(${v},${v},${v},.15)`; ctx.fillRect(Math.random() * S, Math.random() * S, 1.5, 1.5); }
+};
+const weave = (ctx, S) => {
+  ctx.fillStyle = '#e0e0e0'; ctx.fillRect(0, 0, S, S);
+  for (let y = 0; y < S; y += 2) { ctx.fillStyle = `rgba(150,150,150,${0.15 + Math.random() * 0.2})`; ctx.fillRect(0, y, S, 1); }
+  for (let x = 0; x < S; x += 2) { ctx.fillStyle = `rgba(255,255,255,${0.06 + Math.random() * 0.1})`; ctx.fillRect(x, 0, 1, S); }
+};
+const wear = (ctx, S) => {
+  ctx.fillStyle = '#e6e6e6'; ctx.fillRect(0, 0, S, S);
+  for (let i = 0; i < 40; i++) {
+    ctx.strokeStyle = `rgba(255,255,255,${0.04 + Math.random() * 0.08})`; ctx.lineWidth = 0.6 + Math.random();
+    ctx.beginPath(); const x = Math.random() * S, y = Math.random() * S; ctx.moveTo(x, y);
+    ctx.lineTo(x + (Math.random() - 0.5) * 80, y + (Math.random() - 0.5) * 80); ctx.stroke();
+  }
+  smudges(ctx, S);
+};
+
 // A soft volumetric cone for the spotlight: brightest at the lamp, fading
 // toward the floor and at the silhouette edges.
 function makeBeam() {
@@ -161,14 +197,16 @@ export function initScene(canvas, art, state) {
   } catch {
     return null;
   }
+  // ACES, run a little dark: it keeps the deepest blacks for the noir look
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 0.92;
   renderer.shadowMap.enabled = high;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   scene.background = BG[0].clone();
-  scene.fog = new THREE.Fog(BG[0].clone(), 7, 17);
+  // exponential haze: the room falls away into smoke rather than a hard edge
+  scene.fog = new THREE.FogExp2(BG[0].clone(), 0.062);
 
   const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 60);
   camera.position.set(0, 0.15, 6);
@@ -191,18 +229,19 @@ export function initScene(canvas, art, state) {
   const sprite = spriteTexture();
 
   // ---------- light: one key spotlight, a cool rim, and a whisper of fill ----------
-  scene.add(new THREE.HemisphereLight(0x8d97a8, 0x050505, 0.35));
+  scene.add(new THREE.HemisphereLight(0x6f7c92, 0x020202, 0.14));
   const spotTarget = new THREE.Object3D();
   scene.add(spotTarget);
   const spot = new THREE.SpotLight(0xfff1dc, 70, 16, 0.42, 0.85, 1.4);
   spot.position.set(1.6, 5.2, 2.4);
   spot.target = spotTarget;
   spot.castShadow = high;
-  spot.shadow.mapSize.set(1024, 1024);
-  spot.shadow.bias = -0.0005;
+  spot.shadow.mapSize.set(1024, 1024); // 2048 was too heavy: frames stalled on modest GPUs
+  spot.shadow.bias = -0.0004;
+  spot.shadow.normalBias = 0.02;
   spot.shadow.camera.near = 1; spot.shadow.camera.far = 14;
   scene.add(spot);
-  const fill = new THREE.DirectionalLight(0xffffff, 0.45);
+  const fill = new THREE.DirectionalLight(0x9fb2cc, 0.16);
   fill.position.set(-4, 2, 5); scene.add(fill);
   const rim = new THREE.DirectionalLight(0xc4142f, 2.2);
   rim.position.set(4, 1.5, -3); scene.add(rim);
@@ -216,23 +255,65 @@ export function initScene(canvas, art, state) {
   scene.add(beam);
 
   // ---------- the floor: dark, slightly glossy, catches the shadows ----------
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0x0c0c0d, roughness: 0.34, metalness: 0.3, transparent: true });
+  const floorDetail = new THREE.CanvasTexture(detailCanvas(512, smudges));
+  floorDetail.wrapS = floorDetail.wrapT = THREE.RepeatWrapping;
+  floorDetail.repeat.set(14, 14);
+  const floorMat = new THREE.MeshStandardMaterial({
+    color: 0x060607, roughness: 0.55, roughnessMap: floorDetail, metalness: 0.6, envMapIntensity: 0.4,
+    transparent: true,
+  });
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = FLOOR_Y;
   floor.receiveShadow = true;
   scene.add(floor);
 
+  // ---------- the room: a pool of light on the back wall, a soft contact shadow ----------
+  const radial = (inner, outer) => {
+    const c = document.createElement('canvas'); c.width = c.height = 256;
+    const ctx = c.getContext('2d');
+    const g = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    g.addColorStop(0, inner); g.addColorStop(0.45, outer); g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256);
+    return new THREE.CanvasTexture(c);
+  };
+  // A soft pool of light on the back wall behind the exhibit. Its lower half
+  // fades out before the floor line, so it never leaves a hard horizon.
+  const poolCanvas = document.createElement('canvas');
+  poolCanvas.width = poolCanvas.height = 256;
+  {
+    const ctx = poolCanvas.getContext('2d');
+    const g = ctx.createRadialGradient(128, 110, 0, 128, 110, 128);
+    g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.5, 'rgba(255,255,255,.3)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 256, 256);
+    ctx.globalCompositeOperation = 'destination-in';
+    const v = ctx.createLinearGradient(0, 0, 0, 256);
+    v.addColorStop(0, '#000'); v.addColorStop(0.55, '#000'); v.addColorStop(0.82, 'rgba(0,0,0,0)');
+    ctx.fillStyle = v; ctx.fillRect(0, 0, 256, 256);
+  }
+  const wallMat = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(poolCanvas), transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false });
+  const wall = new THREE.Mesh(new THREE.PlaneGeometry(15, 11), wallMat);
+  wall.position.set(0, 2.2, -10);
+  scene.add(wall);
+  const contactMat = new THREE.MeshBasicMaterial({ map: radial('rgba(0,0,0,.85)', 'rgba(0,0,0,.35)'), transparent: true, depthWrite: false, opacity: 0 });
+  const contact = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), contactMat);
+  contact.rotation.x = -Math.PI / 2;
+  contact.position.y = FLOOR_Y + 0.004;
+  scene.add(contact);
+
   // ---------- hardcover books ----------
   const pagesSide = tex(pagesCanvas());
   const pagesTop = tex(pagesCanvas());
   pagesTop.center.set(0.5, 0.5); pagesTop.rotation = Math.PI / 2;
-  const pagesSideMat = new THREE.MeshStandardMaterial({ map: pagesSide, roughness: 0.9 });
-  const pagesTopMat = new THREE.MeshStandardMaterial({ map: pagesTop, roughness: 0.9 });
+  const pagesSideMat = new THREE.MeshStandardMaterial({ map: pagesSide, roughness: 0.95, envMapIntensity: 0.2 });
+  const pagesTopMat = new THREE.MeshStandardMaterial({ map: pagesTop, roughness: 0.95, envMapIntensity: 0.2 });
+  const weaveMap = new THREE.CanvasTexture(detailCanvas(256, weave));
+  weaveMap.wrapS = weaveMap.wrapT = THREE.RepeatWrapping; weaveMap.repeat.set(3, 4.5);
+  const wearMap = new THREE.CanvasTexture(detailCanvas(512, wear));
   const textures = {};
   const texFor = (b) => (textures[b.id] ||= { cover: tex(art[b.id].cover), spine: tex(art[b.id].spine) });
   const boardMats = {};
-  const boardMat = (series) => (boardMats[series] ||= new THREE.MeshStandardMaterial({ color: PALETTE[series].back, roughness: 0.5, envMapIntensity: 0.5 }));
+  const boardMat = (series) => (boardMats[series] ||= new THREE.MeshStandardMaterial({ color: PALETTE[series].back, roughness: 0.78, roughnessMap: weaveMap, envMapIntensity: 0.3 }));
   const geoCache = {};
   const endpaperMat = new THREE.MeshStandardMaterial({ color: 0x3a0d14, roughness: 0.85 });
 
@@ -252,8 +333,8 @@ export function initScene(canvas, art, state) {
     const t = texFor(book);
     const edge = boardMat(book.series);
     const coverMat = high
-      ? new THREE.MeshPhysicalMaterial({ map: t.cover, roughness: 0.42, clearcoat: 0.65, clearcoatRoughness: 0.3, envMapIntensity: 0.7 })
-      : new THREE.MeshStandardMaterial({ map: t.cover, roughness: 0.4, envMapIntensity: 0.7 });
+      ? new THREE.MeshPhysicalMaterial({ map: t.cover, roughness: 0.5, roughnessMap: wearMap, clearcoat: 0.4, clearcoatRoughness: 0.35, clearcoatRoughnessMap: wearMap, envMapIntensity: 0.45 })
+      : new THREE.MeshStandardMaterial({ map: t.cover, roughness: 0.5, roughnessMap: wearMap, envMapIntensity: 0.45 });
     const spineMat = new THREE.MeshStandardMaterial({ map: t.spine, roughness: 0.45, envMapIntensity: 0.6, side: THREE.DoubleSide });
 
     const book3d = new THREE.Group();
@@ -618,6 +699,11 @@ export function initScene(canvas, art, state) {
     beam.scale.set(1, tmpV.length(), 1);
     beam.quaternion.setFromUnitVectors(down, tmpV.normalize());
     beam.material.uniforms.uOpacity.value = 0.1 * onStage;
+    wall.position.x = focus.x * 0.6;
+    wallMat.color.copy(rim.color).lerp(tmpC.set(0xfff1dc), 0.6).multiplyScalar(0.05 + 0.07 * onStage);
+    contact.position.x = focus.x; contact.position.z = focus.z;
+    contact.scale.set(2.6, 1.5, 1);
+    contactMat.opacity = (high ? 0.45 : 0.85) * onStage;
 
     motes.rotation.y = t * 0.02 * motion + s * 0.15;
     motes.position.y = -s * 0.25;
