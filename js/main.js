@@ -57,6 +57,7 @@ let chapter = -1;
 let joshIndex = -1;
 const nav = $('#nav');
 const milesEl = $('#miles');
+const milesGauge = $('#milesGauge');
 function onScroll() {
   const y = scrollY, vh = innerHeight, mid = y + vh / 2;
   let s = 0;
@@ -75,6 +76,7 @@ function onScroll() {
   state.trailP = clamp(((mid - layout.trail.top) / layout.trail.h) * 1.35 - 0.12);
   const miles = Math.round(state.trailP * 2185).toLocaleString('en-US');
   if (milesEl.textContent !== miles) milesEl.textContent = miles;
+  milesGauge.style.strokeDashoffset = 1 - state.trailP;
 
   const c = Math.min(chapters.length - 1, Math.floor(s));
   if (c !== chapter) setChapter(c);
@@ -308,8 +310,9 @@ function setupReveals() {
     const to = +el.dataset.count;
     const fmt = (n) => (el.hasAttribute('data-comma') ? Math.round(n).toLocaleString('en-US') : String(Math.round(n)));
     if (reducedMotion) return;
-    const o = { v: 0 };
-    gsap.to(o, { v: to, duration: 2, ease: 'power2.out', onUpdate: () => { el.textContent = fmt(o.v); }, scrollTrigger: once(el, 'top 92%') });
+    const o = { v: +el.dataset.from || 0 };
+    el.textContent = fmt(o.v);
+    gsap.to(o, { v: to, duration: 2.2, delay: 0.6, ease: 'power3.out', onUpdate: () => { el.textContent = fmt(o.v); }, scrollTrigger: once(el, 'top 92%') });
   });
 }
 
@@ -492,6 +495,76 @@ function setupCaseFile() {
 }
 
 // ---------- themed details: police tape, redactions, depth ----------
+// ---------- circular studio components ----------
+function setupCircles() {
+  // seals: the phrase is set on a circle path; it turns slowly, faster while scrolling
+  $$('[data-seal]').forEach((el, k) => {
+    const NS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('class', 'seal__ring'); svg.setAttribute('viewBox', '0 0 120 120'); svg.setAttribute('aria-hidden', 'true');
+    const path = document.createElementNS(NS, 'path');
+    path.id = `seal-${k}`;
+    path.setAttribute('d', 'M60,60 m-47,0 a47,47 0 1,1 94,0 a47,47 0 1,1 -94,0');
+    path.setAttribute('fill', 'none');
+    const text = document.createElementNS(NS, 'text');
+    const tp = document.createElementNS(NS, 'textPath');
+    tp.setAttribute('href', `#seal-${k}`);
+    tp.setAttribute('textLength', '293'); tp.setAttribute('lengthAdjust', 'spacing');
+    tp.textContent = el.dataset.seal;
+    text.append(tp);
+    svg.append(path, text);
+    el.prepend(svg);
+  });
+  const rings = $$('.seal__ring');
+  if (hasGsap && !reducedMotion) {
+    const spins = rings.map((r) => gsap.to(r, { rotation: 360, duration: 24, repeat: -1, ease: 'none', transformOrigin: '50% 50%' }));
+    lenis?.on('scroll', ({ velocity }) => {
+      const speed = 1 + Math.min(Math.abs(velocity) * 0.25, 7);
+      spins.forEach((t) => gsap.to(t, { timeScale: speed, duration: 0.3, overwrite: true }));
+    });
+  }
+
+  // chapter dials beside each label
+  $$('.chapter .col > .label, .shelf__head .label').forEach((label) => {
+    label.insertAdjacentHTML('afterbegin', '<svg class="dial" viewBox="0 0 24 24" aria-hidden="true"><circle class="dial__track" cx="12" cy="12" r="9.5"/><circle class="dial__fill" cx="12" cy="12" r="9.5" pathLength="1"/></svg>');
+    const fill = $('.dial__fill', label);
+    if (!hasGsap || reducedMotion) { fill.style.strokeDashoffset = 0; return; }
+    ScrollTrigger.create({ trigger: label.closest('.chapter'), start: 'top 75%', end: 'bottom 40%', onUpdate: (self) => { fill.style.strokeDashoffset = 1 - self.progress; } });
+  });
+
+  // timeline: the line draws down and each year lights up as it is reached
+  const tl = $('.timeline');
+  const line = document.createElement('span');
+  line.className = 'timeline__line'; line.setAttribute('aria-hidden', 'true');
+  tl.prepend(line);
+  if (!hasGsap || reducedMotion) { $$('li', tl).forEach((li) => li.classList.add('is-lit')); return; }
+  gsap.fromTo(line, { scaleY: 0 }, { scaleY: 1, ease: 'none', scrollTrigger: { trigger: tl, start: 'top 75%', end: 'bottom 55%', scrub: 0.5 } });
+  $$('li', tl).forEach((li) => {
+    ScrollTrigger.create({ trigger: li, start: 'top 68%', onEnter: () => li.classList.add('is-lit'), onLeaveBack: () => li.classList.remove('is-lit') });
+    gsap.from(li, { x: -24, autoAlpha: 0, duration: 0.8, ease: 'power3.out', scrollTrigger: { trigger: li, start: 'top 90%', once: true } });
+  });
+}
+
+// ---------- extra motion per section ----------
+function setupSectionMotion() {
+  if (!hasGsap || reducedMotion) return;
+  const once = (trigger, start = 'top 84%') => ({ trigger, start, once: true });
+  // list books stagger in, each tipping up off the page
+  $$('.list').forEach((list) => {
+    gsap.from($$('.list__item', list), { y: 40, autoAlpha: 0, rotationX: -18, transformPerspective: 800, duration: 0.9, stagger: 0.14, ease: 'power3.out', scrollTrigger: once(list) });
+  });
+  // the shelf fills book by book (the phone coverflow handles its own motion)
+  if (!state.mobile) {
+    gsap.from('#shelfGrid .book', { y: 70, autoAlpha: 0, duration: 0.9, stagger: { each: 0.05, from: 'start' }, ease: 'power3.out', scrollTrigger: once('#shelfGrid', 'top 85%') });
+  }
+  // the off-duty card and the press card tilt in like papers laid on a desk
+  ['.offduty', '.press'].forEach((sel) => {
+    gsap.from(sel, { rotationX: -24, rotation: -1.5, y: 40, transformPerspective: 900, transformOrigin: '50% 100%', duration: 1.1, ease: 'expo.out', scrollTrigger: once(sel, 'top 88%') });
+  });
+  // the round CTA and the portrait stamp land like a stamp
+  gsap.from('.seal--cta, .portrait__seal', { scale: 0.4, rotation: -40, autoAlpha: 0, duration: 1, ease: 'back.out(1.8)', scrollTrigger: once('.seal--cta, .portrait__seal', 'top 90%') });
+}
+
 function setupTheme() {
   // fill each tape strip with its phrase, repeated well past the screen edge
   $$('.tape__strip span').forEach((sp) => { sp.textContent = Array(14).fill(sp.textContent.trim()).join('   '); });
@@ -556,6 +629,8 @@ async function boot() {
   setupFilters();
   setupCaseFile();
   setupTheme();
+  setupCircles();
+  setupSectionMotion();
   setupDock();
   setupJoshCards();
   setupCoverflow();

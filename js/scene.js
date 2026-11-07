@@ -369,6 +369,38 @@ export function initScene(canvas, art, state) {
   const heroBook = makeBook(byId.pieces, 1.25, heroTitleTex);
   heroA.add(heroBook);
 
+  // the hero's studio set: a turntable plinth the book levitates over, and a
+  // ring light behind it (bright enough for bloom to halo it on desktop)
+  const plinth = new THREE.Group();
+  const plinthMat = new THREE.MeshStandardMaterial({ color: 0x0e0e10, roughness: 0.32, metalness: 0.75, envMapIntensity: 0.55 });
+  const plinthTop = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.06, 0.12, 72), plinthMat);
+  const plinthBase = new THREE.Mesh(new THREE.CylinderGeometry(1.12, 1.16, 0.07, 72), plinthMat);
+  plinthBase.position.y = -0.095;
+  plinthTop.receiveShadow = plinthBase.receiveShadow = high;
+  plinthTop.castShadow = high;
+  const rimGlow = new THREE.Mesh(new THREE.TorusGeometry(1.005, 0.007, 8, 120), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xc4142f).multiplyScalar(2.4) }));
+  rimGlow.rotation.x = Math.PI / 2;
+  rimGlow.position.y = 0.061;
+  // tick marks around the top show the turntable turning
+  const ticks = new THREE.InstancedMesh(new THREE.BoxGeometry(0.012, 0.004, 0.09), new THREE.MeshBasicMaterial({ color: 0x8a8278 }), 48);
+  {
+    const m = new THREE.Object3D();
+    for (let i = 0; i < 48; i++) {
+      const a = (i / 48) * Math.PI * 2;
+      m.position.set(Math.cos(a) * 0.9, 0.062, Math.sin(a) * 0.9);
+      m.rotation.set(0, -a + Math.PI / 2, 0);
+      m.scale.set(1, 1, i % 4 ? 0.55 : 1);
+      m.updateMatrix();
+      ticks.setMatrixAt(i, m.matrix);
+    }
+  }
+  plinth.add(plinthTop, plinthBase, rimGlow, ticks);
+  plinth.position.y = -1.2;
+  heroA.add(plinth);
+  const ringLight = new THREE.Mesh(new THREE.TorusGeometry(1.25, 0.03, 14, 160), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xfff1dc).multiplyScalar(1.35) }));
+  ringLight.position.set(0.15, 0.1, -1.35);
+  heroA.add(ringLight);
+
   // 1 · police badge
   const badgeA = anchor();
   const gold = new THREE.MeshStandardMaterial({ color: 0xc9a24b, metalness: 1, roughness: 0.34, envMapIntensity: 0.85 });
@@ -598,12 +630,15 @@ export function initScene(canvas, art, state) {
     // on phones the headline scrolls up into the book's space, so the book is
     // gone by the time the text reaches it (the hero is taller than the screen there)
     const vHero = (L.mobile ? 1 - ease(clamp((state.heroScroll - 0.1) / 0.24)) : win(s, -1, 0, 0.7, 0.92)) * intro;
-    place(heroA, vHero, 1, { y: bob });
+    // on phones the set sits a little higher and smaller, clear of the headline
+    place(heroA, vHero, 1, { y: bob + (L.mobile ? 0.3 : 0), scale: L.mobile ? 0.84 : 1 });
     // the first scroll opens the book to its title page
     const open = ease(clamp(L.mobile ? state.heroScroll / 0.16 : (s - 0.5) / 0.2));
     heroBook.userData.hinge.rotation.y = -open * 2.1;
     heroBook.rotation.set(0.1 + cur.my * 0.12, lerp(-0.6, 0.18, open) + cur.mx * 0.22 + (1 - intro) * 2.2 + (state.spin || 0), -0.05 * (1 - open));
     heroBook.position.x = open * 0.35;
+    plinth.rotation.y = t * 0.25 * motion + (state.spin || 0) * 0.4;
+    ringLight.rotation.set(cur.my * 0.1, cur.mx * 0.14, 0);
     // police lights breathe slowly instead of strobing
     const sweep = 0.5 + 0.5 * Math.sin(t * 1.6 * motion);
     sirenR.intensity = vHero * 7 * sweep;

@@ -73,13 +73,13 @@
             </a>
           </div>
           <ul class="facts hero-in" style="--d:4">
-            <li><strong>20 years</strong><span>East Providence Police</span></li>
+            <li><strong><span data-count="20">20</span> years</strong><span>East Providence Police</span></li>
             <li><strong>Captain</strong><span>Retired, commanded detectives</span></li>
-            <li><strong>Since 2019</strong><span>JEBWizard Publishing</span></li>
+            <li><strong>Since <span data-count="2019" data-from="1978">2019</span></strong><span>JEBWizard Publishing</span></li>
           </ul>
         </div>
       </div>
-      <a class="scroll-hint" href="#about"><span>Scroll</span><i aria-hidden="true"></i></a>
+      <a class="seal seal--scroll" href="#about" data-seal="Scroll to open the case ★ Scroll to open the case ★ " aria-label="Scroll to meet the author"><span class="seal__core seal__arrow" aria-hidden="true"></span></a>
       <p class="hero__touch" aria-hidden="true"><i></i>Drag to turn the book</p>
     </section>
 
@@ -100,6 +100,7 @@
                 <source srcset="assets/headshot.webp" type="image/webp">
                 <img src="assets/headshot.jpg" alt="" width="600" height="765" loading="lazy" decoding="async">
               </picture>
+              <span class="seal seal--stamp portrait__seal" data-seal="East Providence Police ★ 1978 to 1998 ★ " aria-hidden="true"><span class="seal__core seal__star"></span></span>
               <figcaption>Capt. Joe Broadmeadow, East Providence Police, retired</figcaption>
             </figure>
             <div class="bio__text">
@@ -268,7 +269,7 @@
         <div class="col">
           <p class="label" data-reveal>From the trail</p>
           <h2 class="title" data-split>Spirit of <em>the Trail</em></h2>
-          <p class="odometer" data-reveal><span class="odometer__n" id="miles">2,185</span><span class="odometer__u">miles, Georgia to Maine</span></p>
+          <p class="odometer" data-reveal><svg class="gauge" viewBox="0 0 120 120" aria-hidden="true"><circle class="gauge__ticks" cx="60" cy="60" r="56" pathLength="120" /><circle class="gauge__track" cx="60" cy="60" r="46" /><circle class="gauge__fill" id="milesGauge" cx="60" cy="60" r="46" pathLength="1" /></svg><span class="odometer__n" id="miles">2,185</span><span class="odometer__u">miles, Georgia to Maine</span></p>
           <p class="lede lede--sm" data-reveal>In 2014 Joe walked the entire Appalachian Trail. This book grew out of those months on foot: a man who spent a career reading people, alone with his own thoughts.</p>
           <div class="cta-row" data-reveal>
             <a class="btn btn-frame" href="https://www.amazon.com/s?k=Spirit+of+the+Trail+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener" data-magnetic>
@@ -403,9 +404,9 @@
           <h2 class="title title--xl" data-split>Pick up <em>the case.</em></h2>
           <p class="lede" data-reveal>Every book is on Amazon and Goodreads. For interviews, events or press, the media kit with his bio and headshot is on Joe’s blog.</p>
           <div class="cta-row" data-reveal>
-            <a class="btn btn-primary" href="https://www.amazon.com/s?k=Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener" data-magnetic>
-              <span class="btn__label">Shop all books</span>
-              <span class="btn__icon" aria-hidden="true"></span>
+            <a class="seal seal--cta" href="https://www.amazon.com/s?k=Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener" data-magnetic data-seal="Pick up the case ★ Shop all books ★ ">
+              <span class="seal__core seal__arrow" aria-hidden="true"></span>
+              <span class="sr-only">Shop all books on Amazon</span>
             </a>
             <a class="btn btn-frame" href="https://joebroadmeadowblog.com/press-kit/" target="_blank" rel="noopener" data-magnetic>
               <span class="btn__label">Press and media kit</span>

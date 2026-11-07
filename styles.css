@@ -152,7 +152,8 @@ main { position: relative; z-index: 2; }
 .facts li { padding-right: 34px; margin-right: 34px; border-right: 1px solid var(--line); }
 .facts li:last-child { border: 0; margin: 0; padding: 0; }
 .facts strong { display: block; margin-bottom: 6px; font: 400 1.9rem/1.05 var(--serif); letter-spacing: -.01em; }
-.facts span { font: 500 .66rem var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-3); }
+.facts strong span { font: inherit; letter-spacing: inherit; text-transform: none; color: inherit; font-variant-numeric: tabular-nums; }
+.facts li > span { font: 500 .66rem var(--sans); letter-spacing: .16em; text-transform: uppercase; color: var(--text-3); }
 
 .scroll-hint {
   position: absolute; left: var(--gutter); bottom: 34px; display: flex; align-items: center; gap: 14px; text-decoration: none;
@@ -652,4 +653,73 @@ main { position: relative; z-index: 2; }
   .shelf__grid::before, .shelf__grid::after { flex-basis: 33vw; }
   .jcard { flex-basis: 58%; }
   .casefile__book { width: 36%; }
+}
+
+/* ==========================================================================
+   Circular studio components
+   ========================================================================== */
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- seal: text running round a circle (built by JS from data-seal) ---------- */
+.seal { --size: 116px; position: relative; display: grid; place-items: center; width: var(--size); height: var(--size); flex: none; border-radius: 50%; text-decoration: none; color: var(--text); }
+.seal__ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.seal__ring text { font: 500 8.6px var(--sans); letter-spacing: .1em; text-transform: uppercase; fill: var(--text-2); }
+.seal__core { position: relative; display: grid; place-items: center; width: 44%; height: 44%; border-radius: 50%; border: 1px solid var(--line-strong); transition: background-color .5s var(--ease-out), border-color .5s, transform .6s var(--ease-out); }
+.seal__arrow::before { /* a down arrow, turned for the CTA */
+  content: ''; width: 34%; height: 34%;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ede7dd' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v16M6 14l6 6 6-6'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+.seal__star::before { content: ''; width: 46%; height: 46%; background: var(--oxblood); clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); }
+
+/* hero: the scroll cue */
+.seal--scroll { position: absolute; right: var(--gutter); bottom: 30px; z-index: 2; }
+.seal--scroll .seal__arrow::before { animation: sealNudge 2.4s var(--ease-io) infinite; }
+@keyframes sealNudge { 50% { transform: translateY(4px); } }
+.seal--scroll:hover .seal__core { background: rgba(237,231,221,.08); }
+
+/* portrait: a police seal stamped on the corner */
+.portrait__seal { --size: 104px; position: absolute; right: -34px; top: -34px; z-index: 2; background: radial-gradient(circle, #141416 60%, #0b0b0c); box-shadow: 0 16px 30px -10px rgba(0,0,0,.9), inset 0 0 0 1px rgba(196,20,47,.55), inset 0 0 0 7px #0b0b0c, inset 0 0 0 8px rgba(196,20,47,.3); }
+.portrait__seal .seal__ring text { fill: #d6cfc3; font-size: 9px; }
+.portrait__seal .seal__core { border-color: rgba(196,20,47,.45); }
+
+/* closing: the round call to action */
+.seal--cta { --size: 132px; }
+.seal--cta .seal__core { width: 56%; height: 56%; border: 0; background: var(--bone); }
+.seal--cta .seal__arrow::before { transform: rotate(-90deg); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23070708' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 4v16M6 14l6 6 6-6'/%3E%3C/svg%3E"); transition: transform .6s var(--ease-out); }
+.seal--cta .seal__ring text { fill: var(--text); }
+.seal--cta:hover .seal__core, .seal--cta:focus-visible .seal__core { background: var(--accent); transform: scale(1.08); }
+.seal--cta:hover .seal__arrow::before { transform: rotate(-45deg); filter: invert(1); }
+
+/* ---------- chapter dial: fills as you read through the chapter ---------- */
+.dial { width: 18px; height: 18px; flex: none; transform: rotate(-90deg); }
+.dial circle { fill: none; stroke-width: 2.2; }
+.dial__track { stroke: var(--line); }
+.dial__fill { stroke: var(--accent); stroke-dasharray: 1; stroke-dashoffset: 1; stroke-linecap: round; transition: stroke .6s; }
+
+/* ---------- trail gauge ---------- */
+.odometer { align-items: center; }
+.gauge { width: 92px; height: 92px; flex: none; transform: rotate(-90deg); }
+.gauge circle { fill: none; }
+.gauge__ticks { stroke: var(--line-strong); stroke-width: 5; stroke-dasharray: .25 1.75; }
+.gauge__track { stroke: var(--line); stroke-width: 2; }
+.gauge__fill { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; filter: drop-shadow(0 0 6px rgba(217,154,82,.55)); }
+
+/* ---------- timeline: a line that draws down, a dot per year ---------- */
+.timeline { position: relative; padding-left: 26px; }
+.timeline__line { position: absolute; left: 6px; top: 0; bottom: 0; width: 1px; background: linear-gradient(var(--accent), rgba(196,20,47,.2)); transform-origin: top; }
+.timeline li { position: relative; }
+.timeline li::before {
+  content: ''; position: absolute; left: -24px; top: 26px; width: 9px; height: 9px; border-radius: 50%;
+  border: 1px solid var(--line-strong); background: var(--ink); transition: background-color .5s, border-color .5s, box-shadow .5s, transform .5s var(--ease-out);
+}
+.timeline li.is-lit::before { background: var(--accent); border-color: var(--accent); box-shadow: 0 0 0 5px rgba(196,20,47,.14); transform: scale(1.15); }
+
+@media (max-width: 599px), (max-width: 1199px) and (max-aspect-ratio: 11/10) {
+  .seal--scroll { display: none; }
+  .portrait__seal { --size: 84px; right: -22px; top: -22px; }
+  .gauge { width: 70px; height: 70px; }
+  .seal--cta { --size: 118px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seal--scroll .seal__arrow::before { animation: none; }
 }
