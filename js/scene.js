@@ -5,10 +5,6 @@
 
 import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
-import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
-import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { bySeries, byId, BOOKS, STACKED } from './data.js';
 import { PALETTE } from './covers.js';
 
@@ -193,15 +189,13 @@ export function initScene(canvas, art, state) {
   const high = !state.mobile && !state.lite;
   let renderer;
   try {
-    renderer = new THREE.WebGLRenderer({ canvas, antialias: !high, powerPreference: 'high-performance' });
+    renderer = new THREE.WebGLRenderer({ canvas, antialias: high, powerPreference: 'high-performance' });
   } catch {
     return null;
   }
   // ACES, run a little dark: it keeps the deepest blacks for the noir look
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 0.92;
-  renderer.shadowMap.enabled = high;
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
   const scene = new THREE.Scene();
   scene.background = BG[0].clone();
@@ -212,19 +206,12 @@ export function initScene(canvas, art, state) {
   camera.position.set(0, 0.15, 6);
 
   const pmrem = new THREE.PMREMGenerator(renderer);
-  scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  const room = new RoomEnvironment();
+  scene.environment = pmrem.fromScene(room, 0.04).texture;
+  room.dispose();
+  pmrem.dispose();
 
-  let composer = null, bloom = null;
-  if (high) {
-    // No MSAA on the composer targets: with UnrealBloomPass in three r160 it corrupts the frame
-    composer = new EffectComposer(renderer);
-    composer.addPass(new RenderPass(scene, camera));
-    bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth / 2, innerHeight / 2), 0.45, 0.55, 0.93);
-    composer.addPass(bloom);
-    composer.addPass(new OutputPass());
-  }
-
-  const aniso = renderer.capabilities.getMaxAnisotropy();
+  const aniso = Math.min(4, renderer.capabilities.getMaxAnisotropy());
   const tex = (c) => { const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = aniso; return t; };
   const sprite = spriteTexture();
 
@@ -235,11 +222,6 @@ export function initScene(canvas, art, state) {
   const spot = new THREE.SpotLight(0xfff1dc, 70, 16, 0.42, 0.85, 1.4);
   spot.position.set(1.6, 5.2, 2.4);
   spot.target = spotTarget;
-  spot.castShadow = high;
-  spot.shadow.mapSize.set(1024, 1024); // 2048 was too heavy: frames stalled on modest GPUs
-  spot.shadow.bias = -0.0004;
-  spot.shadow.normalBias = 0.02;
-  spot.shadow.camera.near = 1; spot.shadow.camera.far = 14;
   scene.add(spot);
   const fill = new THREE.DirectionalLight(0x9fb2cc, 0.16);
   fill.position.set(-4, 2, 5); scene.add(fill);
@@ -254,7 +236,7 @@ export function initScene(canvas, art, state) {
   const beam = makeBeam();
   scene.add(beam);
 
-  // ---------- the floor: dark, slightly glossy, catches the shadows ----------
+  // ---------- the floor: dark, slightly glossy ----------
   const floorDetail = new THREE.CanvasTexture(detailCanvas(512, smudges));
   floorDetail.wrapS = floorDetail.wrapT = THREE.RepeatWrapping;
   floorDetail.repeat.set(14, 14);
@@ -265,7 +247,6 @@ export function initScene(canvas, art, state) {
   const floor = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), floorMat);
   floor.rotation.x = -Math.PI / 2;
   floor.position.y = FLOOR_Y;
-  floor.receiveShadow = true;
   scene.add(floor);
 
   // ---------- the room: a pool of light on the back wall, a soft contact shadow ----------
@@ -353,7 +334,6 @@ export function initScene(canvas, art, state) {
     spine.position.x = -g.W / 2;
     book3d.add(hinge, back, pages, spine);
     book3d.userData.hinge = hinge;
-    book3d.traverse((m) => { if (m.isMesh) { m.castShadow = high; } });
     book3d.userData.book = book;
     return book3d;
   }
@@ -370,14 +350,12 @@ export function initScene(canvas, art, state) {
   heroA.add(heroBook);
 
   // the hero's studio set: a turntable plinth the book levitates over, and a
-  // ring light behind it (bright enough for bloom to halo it on desktop)
+  // Ring light behind the book.
   const plinth = new THREE.Group();
   const plinthMat = new THREE.MeshStandardMaterial({ color: 0x0e0e10, roughness: 0.32, metalness: 0.75, envMapIntensity: 0.55 });
   const plinthTop = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.06, 0.12, 72), plinthMat);
   const plinthBase = new THREE.Mesh(new THREE.CylinderGeometry(1.12, 1.16, 0.07, 72), plinthMat);
   plinthBase.position.y = -0.095;
-  plinthTop.receiveShadow = plinthBase.receiveShadow = high;
-  plinthTop.castShadow = high;
   const rimGlow = new THREE.Mesh(new THREE.TorusGeometry(1.005, 0.007, 8, 120), new THREE.MeshBasicMaterial({ color: new THREE.Color(0xc4142f).multiplyScalar(2.4) }));
   rimGlow.rotation.x = Math.PI / 2;
   rimGlow.position.y = 0.061;
@@ -430,7 +408,6 @@ export function initScene(canvas, art, state) {
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.58, 0.035, 12, 80), gold);
     ring.position.z = 0.11;
     badgeA.add(ring);
-    badgeA.traverse((m) => { if (m.isMesh) m.castShadow = high; });
   }
 
   // 2 · Josh Williams carousel
@@ -461,7 +438,7 @@ export function initScene(canvas, art, state) {
     g.setAttribute('position', new THREE.BufferAttribute(pos, 3));
     return new THREE.Points(g, new THREE.PointsMaterial({ color, size, map: sprite, transparent: true, opacity, depthWrite: false, blending: THREE.AdditiveBlending }));
   };
-  const goldDust = dust(high ? 520 : 240, [1.0, 1.3, 2.8], 0xe0b860, 0.045);
+  const goldDust = dust(high ? 300 : 125, [1.0, 1.3, 2.8], 0xe0b860, 0.045);
   hawkA.add(goldDust);
 
   // 4 · true crime: three exhibits
@@ -490,7 +467,6 @@ export function initScene(canvas, art, state) {
   });
   const egg = new THREE.Mesh(eggGeo, eggMat);
   egg.scale.set(0.8, 1.08, 0.8);
-  egg.castShadow = high;
   dragonA.add(egg);
   const orbit = new THREE.Group();
   orbit.rotation.set(0.35, 0, -0.25);
@@ -500,7 +476,7 @@ export function initScene(canvas, art, state) {
     m.userData.phase = (i / 3) * Math.PI * 2;
     orbit.add(m);
   });
-  const EMBERS = high ? 480 : 200;
+  const EMBERS = high ? 300 : 120;
   const emberGeo = new THREE.BufferGeometry();
   const emberPos = new Float32Array(EMBERS * 3);
   const emberSeed = new Float32Array(EMBERS);
@@ -555,20 +531,20 @@ export function initScene(canvas, art, state) {
   });
 
   // dust motes hanging in the beam
-  const motes = dust(high ? 700 : 300, [0, 7, 8], 0xffffff, 0.02, 0.45);
+  const motes = dust(high ? 420 : 160, [0, 7, 8], 0xffffff, 0.02, 0.45);
   scene.add(motes);
 
   // ---------- layout ----------
   const L = { objX: 1.6, yOff: 0, scale: 1, mobile: false };
-  let maxPR = high ? 1.5 : 1.25; // lowered at runtime by adaptQuality()
+  let maxPR = high ? 1.2 : 1;
+  let needsFrame = true;
   function resize() {
-    const w = window.innerWidth, h = window.innerHeight;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPR));
-    renderer.setSize(w, h, false);
-    if (composer) {
-      composer.setPixelRatio(renderer.getPixelRatio());
-      composer.setSize(w, h);
-      bloom.resolution.set(w / 2, h / 2);
+    needsFrame = true;
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    const ratio = Math.min(window.devicePixelRatio, maxPR);
+    if (ratio !== renderer.getPixelRatio()) renderer.setPixelRatio(ratio);
+    if (canvas.width !== Math.floor(w * ratio) || canvas.height !== Math.floor(h * ratio)) {
+      renderer.setSize(w, h, false);
     }
     camera.aspect = w / h;
     L.mobile = matchMedia(STACKED).matches;
@@ -600,12 +576,19 @@ export function initScene(canvas, art, state) {
   const down = new THREE.Vector3(0, -1, 0);
   let onFirstFrame = null;
   let drewEmpty = false;
+  let slowFrames = 0;
+  let lastInput = null;
 
   function frame() {
-    const dt = Math.min(clock.getDelta(), 0.05);
+    if (document.hidden || (state.paused && !onFirstFrame)) return;
+    const elapsed = clock.getDelta();
+    const dt = Math.min(elapsed, 0.05);
+    const input = state.reduced ? state.s + ':' + state.heroScroll + ':' + state.joshP + ':' + state.trailP : null;
+    if (!needsFrame && !onFirstFrame && state.reduced && lastInput === input) return;
+    if (!needsFrame && !onFirstFrame && drewEmpty && Math.abs(cur.s - state.s) < 0.0001) return;
+    lastInput = input;
     const t = clock.elapsedTime;
-    // Lenis already smooths the scroll, so the stage only adds a light follow
-    const k = state.reduced ? 1 : 1 - Math.exp(-dt * 14);
+    const k = state.reduced ? 1 : 1 - Math.exp(-dt * 30);
     cur.s = lerp(cur.s, state.s, k);
     cur.josh = lerp(cur.josh, state.joshP, k);
     cur.trail = lerp(cur.trail, state.trailP, k);
@@ -614,7 +597,6 @@ export function initScene(canvas, art, state) {
     cur.my = lerp(cur.my, state.my, km);
     const s = cur.s;
     const motion = state.reduced ? 0 : 1;
-    const intro = ease(clamp(state.intro));
     const bob = Math.sin(t * 1.1) * 0.05 * motion;
 
     const i0 = clamp(Math.floor(s), 0, BG.length - 2), f = clamp(s - i0);
@@ -629,13 +611,13 @@ export function initScene(canvas, art, state) {
     // 0 hero
     // on phones the headline scrolls up into the book's space, so the book is
     // gone by the time the text reaches it (the hero is taller than the screen there)
-    const vHero = (L.mobile ? 1 - ease(clamp((state.heroScroll - 0.1) / 0.24)) : win(s, -1, 0, 0.7, 0.92)) * intro;
+    const vHero = L.mobile ? 1 - ease(clamp((state.heroScroll - 0.1) / 0.24)) : win(s, -1, 0, 0.7, 0.92);
     // on phones the set sits a little higher and smaller, clear of the headline
     place(heroA, vHero, 1, { y: bob + (L.mobile ? 0.3 : 0), scale: L.mobile ? 0.84 : 1 });
     // the first scroll opens the book to its title page
     const open = ease(clamp(L.mobile ? state.heroScroll / 0.16 : (s - 0.5) / 0.2));
     heroBook.userData.hinge.rotation.y = -open * 2.1;
-    heroBook.rotation.set(0.1 + cur.my * 0.12, lerp(-0.6, 0.18, open) + cur.mx * 0.22 + (1 - intro) * 2.2 + (state.spin || 0), -0.05 * (1 - open));
+    heroBook.rotation.set(0.1 + cur.my * 0.12, lerp(-0.6, 0.18, open) + cur.mx * 0.22 + (state.spin || 0), -0.05 * (1 - open));
     heroBook.position.x = open * 0.35;
     plinth.rotation.y = t * 0.25 * motion + (state.spin || 0) * 0.4;
     ringLight.rotation.set(cur.my * 0.1, cur.mx * 0.14, 0);
@@ -713,7 +695,7 @@ export function initScene(canvas, art, state) {
     floorMat.opacity = 1 - vTrail;
 
     // 8 closing helix
-    const vHelix = win(s, 8.0, 8.2, 9.5, 10);
+    const vHelix = win(s, 8.0, 8.2, 8.9, 9.08);
     place(helixA, vHelix, 1, { scale: 0.82 });
     helix.rotation.y = t * 0.15 * motion + s * 1.2;
     helixA.rotation.x = 0.08 + cur.my * 0.08;
@@ -743,40 +725,27 @@ export function initScene(canvas, art, state) {
     motes.rotation.y = t * 0.02 * motion + s * 0.15;
     motes.position.y = -s * 0.25;
 
-    // nothing on stage and the scroll has settled (e.g. the book grid): the
-    // frame would not change, so skip it rather than throttle the frame rate
-    const settled = Math.abs(cur.s - state.s) < 1e-4;
-    // (only once the empty stage has been drawn, or the last image would stay on screen)
-    const empty = onStage < 0.002 && !trailA.visible && settled;
-    if (empty && drewEmpty && !onFirstFrame) return;
+    // An empty stage only needs a single frame to clear the previous exhibit.
+    const empty = onStage < 0.002 && !trailA.visible;
+    if (empty && drewEmpty && !needsFrame && !onFirstFrame) return;
     drewEmpty = empty;
-    if (t > 2) adaptQuality(dt);
-    composer ? composer.render() : renderer.render(scene, camera);
+    needsFrame = false;
+    renderer.render(scene, camera);
     if (onFirstFrame) { onFirstFrame(); onFirstFrame = null; }
-  }
 
-  // If the machine can't hold ~50fps, lower the resolution step by step and
-  // finally drop bloom, instead of stuttering.
-  let pr = renderer.getPixelRatio(), slow = 0;
-  function adaptQuality(dt) {
-    if (document.hidden) return; // background tabs are throttled, not slow
-    slow = dt > 1 / 50 ? slow + 1 : Math.max(0, slow - 2);
-    if (slow < 45) return;
-    slow = 0;
-    if (pr > 1) {
-      pr = Math.max(1, pr - 0.25);
-      renderer.setPixelRatio(pr);
-      if (composer) composer.setPixelRatio(pr);
-      maxPR = pr;
-    } else if (composer) {
-      composer = null;
+    // Lower resolution once on devices that consistently miss their frame budget.
+    if (!drewEmpty && t > 1 && maxPR > 0.75) {
+      slowFrames = elapsed > 0.022 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
+      if (slowFrames > 10) {
+        maxPR = 0.75;
+        resize();
+      }
     }
   }
 
   function loop() { requestAnimationFrame(loop); frame(); }
   return {
-    // Pass GSAP's ticker so the stage renders in the same tick, right after
-    // Lenis moves the page; otherwise the 3D can trail the text by a frame.
+    // Share the animation ticker when the page has one.
     start(ticker) {
       return new Promise((resolve) => {
         onFirstFrame = resolve;

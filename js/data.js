@@ -20,6 +20,7 @@ export const BOOKS = [...document.querySelectorAll('#shelfGrid [data-book]')].ma
   buy: el.dataset.buy,
   page: el.querySelector('a').href,
   cover: el.dataset.coverFile,
+  artLabel: el.dataset.artLabel,
 }));
 
 export const byId = Object.fromEntries(BOOKS.map((b) => [b.id, b]));

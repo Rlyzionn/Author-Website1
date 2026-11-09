@@ -36,10 +36,7 @@ body[data-chapter="5"] { --accent: #e8692c; }
 body[data-chapter="6"] { --accent: #d99a52; }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
-html.lenis, html.lenis body { height: auto; }
-.lenis.lenis-smooth { scroll-behavior: auto !important; }
-.lenis.lenis-stopped { overflow: hidden; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: auto; }
 body {
   margin: 0;
   background: var(--ink);
@@ -61,7 +58,7 @@ a { color: inherit; }
 .skip:focus { transform: none; }
 
 /* ---------- fixed layers ---------- */
-#stage { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display: block; opacity: 0; transition: opacity 1.4s var(--ease-out); }
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; display: block; opacity: 0; transition: opacity .45s var(--ease-out); }
 #stage.is-ready { opacity: 1; }
 .grain {
   /* static: an animated full-screen grain reads as flicker and repaints every step */
@@ -595,7 +592,7 @@ main { position: relative; z-index: 2; }
     transition: opacity .6s;
   }
   .hero__touch i { position: relative; width: 22px; height: 1px; background: var(--line-strong); }
-  .hero__touch i::after { content: ''; position: absolute; top: -3px; left: 0; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: touchHint 2.2s var(--ease-io) infinite; }
+  .hero__touch i::after { content: ''; position: absolute; top: -3px; left: 0; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
   .hero.is-touched .hero__touch { opacity: 0; }
 
   /* ---------- Josh Williams: swipe the story, the 3D shelf turns ---------- */
@@ -647,7 +644,6 @@ main { position: relative; z-index: 2; }
   .casefile__book { width: 52%; padding-top: 18px; }
 }
 @media (hover: hover) { .hero__touch { display: none !important; } }
-@keyframes touchHint { 50% { transform: translateX(15px); } }
 @media (min-width: 600px) and (max-width: 1199px) and (max-aspect-ratio: 11/10) {
   .book { flex-basis: 34vw; }
   .shelf__grid::before, .shelf__grid::after { flex-basis: 33vw; }
@@ -769,4 +765,41 @@ body:has(#stage.is-ready) .hero__touch { visibility: visible; }
 @media (prefers-reduced-motion: reduce) {
   body:has(#stage.is-ready) .hero__touch { visibility: hidden; }
   .hero__fallback { transition: none; }
+}
+
+.blog-page__main { padding-block: clamp(34px, 5vw, 65px); }
+.blog-page__main > .title--xl { margin: .25em 0; }
+.blog-page__main > .lede { margin-bottom: 1.5rem; }
+.writing__spotlight { margin-bottom: clamp(55px, 8vw, 105px); }
+.writing__spotlight .writing__post {
+  border: 1px solid var(--line-strong); padding: clamp(22px, 4vw, 50px);
+  background: #101012;
+}
+.writing__spotlight .writing__post--illustrated {
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: clamp(20px, 4vw, 55px); align-items: center;
+}
+.writing__spotlight img { display: block; width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 2px; }
+.writing__spotlight h2 { margin: .3em 0; font: 400 clamp(2.2rem, 5vw, 4.4rem)/.98 var(--serif); overflow-wrap: anywhere; }
+.blog-page__actions { flex-wrap: wrap; }
+#writingMore { padding-inline: 1.4rem; }
+#writingMore[hidden] { display: none; }
+#writingMore:disabled { opacity: .65; cursor: wait; }
+@media (max-width: 740px) {
+  .writing__spotlight .writing__post--illustrated { grid-template-columns: minmax(0, 1fr); }
+  .writing__spotlight img { grid-row: 2; }
+}
+
+html.dialog-open { overflow: hidden; }
+
+@supports (height: 100lvh) { #stage { height: 100lvh; } }
+
+@media (max-width: 900px) {
+  .nav__links { display: flex; }
+  .nav__links a:not([href="/blog/"]) { display: none; }
+  .nav__links a[href="/blog/"] { padding: .5rem .65rem; }
+}
+@media (max-width: 599px), (max-width: 1199px) and (max-aspect-ratio: 11/10) {
+  html { scroll-padding-block: 4.5rem 6rem; }
+  .hero__touch { top: 39svh; z-index: 2; pointer-events: none; }
 }

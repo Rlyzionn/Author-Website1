@@ -1,12 +1,12 @@
 # Joe Broadmeadow website
 
-The Vercel site is the front door for Joe’s books. Joe publishes in WordPress as usual, and the Writing section pulls his three latest public posts. Readers open the original WordPress article or browse the complete archive there.
+The Vercel site is the front door for Joe’s books. Joe publishes in WordPress as usual, and the homepage shows his three latest public posts. The dedicated [Blog page](https://author-website1-eight.vercel.app/blog/) spotlights the newest post and lets readers load older posts. Readers open the original WordPress article or browse the complete archive there.
 
 ## Publish a post
 
 1. Sign in to [WordPress](https://joebroadmeadowblog.com/wp-admin/) and open **Posts**.
 2. Write or edit a post and choose **Publish**. Set the post to **Public** if it should appear on the site.
-3. Open [Latest writing](https://author-website1-eight.vercel.app/#writing) and refresh to check the title, excerpt and article link. WordPress caching can delay updates briefly. There is no GitHub step for blog posts.
+3. Open the [Blog page](https://author-website1-eight.vercel.app/blog/) and refresh to check the title, excerpt and article link. WordPress caching can delay updates briefly. There is no GitHub step for blog posts.
 
 ## Update a book
 

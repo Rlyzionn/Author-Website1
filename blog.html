@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blog | Joe Broadmeadow</title>
+  <meta name="description" content="The latest essays, short fiction and observations from Joe Broadmeadow’s WordPress blog.">
+  <meta name="theme-color" content="#070708">
+  <link rel="canonical" href="https://author-website1-eight.vercel.app/blog/">
+  <meta property="og:title" content="Blog | Joe Broadmeadow">
+  <meta property="og:description" content="Essays, short fiction and observations from Joe Broadmeadow.">
+  <meta property="og:image" content="https://author-website1-eight.vercel.app/assets/headshot.jpg">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..600&display=swap">
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/js/writing.js"></script>
+</head>
+<body class="blog-page">
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="wrap wrap--wide book-page__header">
+    <a class="brand" href="/" aria-label="Joe Broadmeadow, home">
+      <span class="brand__mark" aria-hidden="true">JB</span>
+      <span class="brand__name">Joe Broadmeadow</span>
+    </a>
+    <a class="btn btn-frame btn-sm" href="/#shelf">All books</a>
+  </header>
+  <main class="wrap wrap--wide blog-page__main" id="main">
+    <p class="label">From the desk of Joe Broadmeadow</p>
+    <h1 class="title title--xl">Joe’s <em>blog.</em></h1>
+    <p class="lede">Essays, short fiction and observations. Each article opens on Joe’s WordPress site.</p>
+    <p class="sr-only" id="writingStatus" role="status"></p>
+    <p class="label">Latest post</p>
+    <div class="writing__spotlight" id="writingSpotlight"><!-- WRITING_SPOTLIGHT --></div>
+    <h2 class="title" id="recentPosts">Recent <em>posts.</em></h2>
+    <div class="writing__grid" id="writingPosts" aria-labelledby="recentPosts"><!-- WRITING_SNAPSHOT --></div>
+    <div class="cta-row blog-page__actions">
+      <button class="btn btn-primary" id="writingMore" type="button" aria-controls="writingPosts" hidden>Load older posts</button>
+      <a class="btn btn-frame writing__archive" href="https://joebroadmeadowblog.com/writing/">Open the WordPress archive</a>
+    </div>
+  </main>
+  <footer class="footer">
+    <div class="wrap wrap--wide footer__inner">
+      <nav class="footer__links" aria-label="More from Joe">
+        <a href="/">Home</a><a href="/#shelf">Books</a><a href="/#about">About</a>
+      </nav>
+    </div>
+  </footer>
+</body>
+</html>

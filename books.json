@@ -170,6 +170,9 @@
     "tagline": "A small bedtime story about wonder.",
     "description": "In Joe’s story about childhood wonder, four-year-old Levi discovers Thauma in the quiet space under the stairs.",
     "infoLabel": "Read the story",
-    "infoUrl": "https://joebroadmeadowblog.com/2026/08/26/thauma/"
+    "infoUrl": "https://joebroadmeadowblog.com/2026/08/26/thauma/",
+    "cover": "assets/art/thauma.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2026/08/img_9419.jpg",
+    "artLabel": "Illustration from Joe’s original story"
   }
 ]

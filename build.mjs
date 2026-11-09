@@ -20,7 +20,7 @@ if (catalog.size !== books.length) throw new Error('Each book needs a unique ID.
 
 function coverMarkup(book, extraClass = '', decorative = true) {
   const title = escape(book.title);
-  const alt = decorative ? '' : 'Cover of ' + title;
+  const alt = decorative ? '' : escape(book.artLabel || 'Cover of ' + book.title);
   const art = book.cover
     ? '<img src="' + escape(coverPath(book)) + '" alt="' + alt + '" width="512" height="768" ' + (decorative ? 'loading="lazy" decoding="async"' : 'fetchpriority="high"') + '>'
     : '<span class="cover__title">' + title + '</span>';
@@ -32,7 +32,7 @@ function shelfItem(book) {
   const attributes = {
     book: book.id, series: book.series, tagline: book.tagline,
     description: book.description, coauthor: book.coauthor, subtitle: book.subtitle,
-    status: book.status, buy: book.buy, 'cover-file': book.cover && coverPath(book),
+    status: book.status, 'art-label': book.artLabel, buy: book.buy, 'cover-file': book.cover && coverPath(book),
   };
   const data = Object.entries(attributes)
     .filter(([, value]) => value)
@@ -42,7 +42,7 @@ function shelfItem(book) {
       ${coverMarkup(book)}
       <span class="book__series">${escape(series[book.series])}</span>
       <span class="book__title">${escape(book.title)}</span>
-      ${book.cover ? '' : '<span class="book__status">' + escape(book.status || 'Cover unavailable') + '</span>'}
+      ${book.cover && !book.artLabel ? '' : '<span class="book__status">' + escape(book.artLabel || book.status || 'Cover unavailable') + '</span>'}
     </a>
   </li>`;
 }
@@ -94,7 +94,7 @@ function bookPage(book) {
   <main class="wrap book-page__grid">
     <figure class="book-page__art">
       ${coverMarkup(book, '', false)}
-      ${book.cover ? '' : '<figcaption>Cover unavailable</figcaption>'}
+      ${book.cover && !book.artLabel ? '' : '<figcaption>' + escape(book.artLabel || 'Cover unavailable') + '</figcaption>'}
     </figure>
     <div>
       <p class="label">${escape(series[book.series])}</p>
@@ -112,7 +112,7 @@ function bookPage(book) {
   <footer class="footer">
     <div class="wrap wrap--wide footer__inner">
       <nav class="footer__links" aria-label="More from Joe">
-        <a href="/#shelf">Books</a><a href="/#writing">Writing</a><a href="/#about">About</a>
+        <a href="/#shelf">Books</a><a href="/blog/">Blog</a><a href="/#about">About</a>
       </nav>
     </div>
   </footer>
@@ -134,13 +134,14 @@ for (const book of books) {
 }
 
 const josh = books.filter((book) => book.series === 'josh');
-const postCards = posts.map(({ title, url, date }) => {
+function postCard({ title, url, date }, heading = 'h3') {
   const label = new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(date));
   return `<article class="writing__post">
     <time class="label" datetime="${escape(date)}">${escape(label)}</time>
-    <h3><a href="${escape(url)}">${escape(title)}</a></h3>
+    <${heading}><a href="${escape(url)}">${escape(title)}</a></${heading}>
   </article>`;
-}).join('\n');
+}
+const postCards = posts.map((post) => postCard(post)).join('\n');
 
 const home = readFileSync('index.html', 'utf8')
   .replace('<!-- BOOK_CATALOG -->', books.map(shelfItem).join('\n'))
@@ -153,8 +154,13 @@ const home = readFileSync('index.html', 'utf8')
     (_, id) => coverMarkup(catalog.get(id), ' cover--thumb'))
   .replace(/\{\{buy:([\w-]+)\}\}/g, (_, id) => escape(catalog.get(id).buy || bookPath(catalog.get(id))));
 writeFileSync(join(output, 'index.html'), home);
+mkdirSync(join(output, 'blog'), { recursive: true });
+const blog = readFileSync('blog.html', 'utf8')
+  .replace('<!-- WRITING_SPOTLIGHT -->', postCard(posts[0], 'h2'))
+  .replace('<!-- WRITING_SNAPSHOT -->', posts.slice(1).map((post) => postCard(post)).join('\n'));
+writeFileSync(join(output, 'blog', 'index.html'), blog);
 writeFileSync(join(output, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${site}/sitemap.xml\n`);
 writeFileSync(join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${['/', ...books.map(bookPath)].map((path) => '  <url><loc>' + site + path + '</loc></url>').join('\n')}
+${['/', '/blog/', ...books.map(bookPath)].map((path) => '  <url><loc>' + site + path + '</loc></url>').join('\n')}
 </urlset>\n`);

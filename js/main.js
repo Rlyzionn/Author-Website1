@@ -11,33 +11,24 @@ const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 
 const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 // ?snap turns off easing in the 3D stage (handy for screenshots and QA)
-// ?lite forces the low-cost renderer (no shadows or bloom), as used on phones
+// ?lite forces the low-cost renderer used on phones
 const params = new URLSearchParams(location.search);
 const snap = params.has('snap');
 const finePointer = matchMedia('(pointer: fine)').matches;
 // phones get the low-cost renderer in either orientation
 const phone = !finePointer && Math.min(screen.width, screen.height) < 600;
-const state = { s: 0.5, heroScroll: 0, spin: 0, joshP: 0, trailP: 0, mx: 0, my: 0, intro: 0, reduced: reducedMotion || snap, mobile: matchMedia(STACKED).matches, lite: params.has('lite') || phone };
+const state = { s: 0.5, heroScroll: 0, spin: 0, joshP: 0, trailP: 0, mx: 0, my: 0, reduced: reducedMotion || snap, mobile: matchMedia(STACKED).matches, lite: params.has('lite') || phone };
 
 const chapters = $$('.chapter');
 const josh = bySeries('josh');
 const statusEl = $('#stageStatus');
 const setStatus = (text) => { if (!statusEl.classList.contains('is-done')) statusEl.textContent = text; };
 
-// ---------- motion system: Lenis + GSAP (only if the CDN scripts loaded) ----------
-const { gsap, ScrollTrigger, SplitText, Flip, Lenis } = window;
+// Native scrolling supplies the position for the stage and chapter transitions.
+const { gsap, ScrollTrigger } = window;
 const hasGsap = Boolean(gsap && ScrollTrigger);
-let lenis = null;
-if (hasGsap) {
-  gsap.registerPlugin(ScrollTrigger, ...[SplitText, Flip].filter(Boolean));
-  if (!reducedMotion && Lenis) {
-    lenis = new Lenis({ lerp: 0.085, anchors: true });
-    lenis.on('scroll', ScrollTrigger.update);
-    gsap.ticker.add((time) => lenis.raf(time * 1000));
-    gsap.ticker.lagSmoothing(0);
-  }
-}
-const scrollToY = (y) => (lenis ? lenis.scrollTo(y, { duration: 1.4 }) : scrollTo({ top: y, behavior: reducedMotion ? 'auto' : 'smooth' }));
+if (hasGsap) gsap.registerPlugin(ScrollTrigger);
+const scrollToY = (y) => scrollTo({ top: y, behavior: reducedMotion ? 'instant' : 'smooth' });
 
 // ---------- scroll → story position ----------
 let layout = { chapters: [], josh: { top: 0, h: 1 }, trail: { top: 0, h: 1 }, max: 1 };
@@ -52,13 +43,18 @@ function measure() {
   state.mobile = matchMedia(STACKED).matches;
 }
 
-let lastY = 0;
+let navY = 0;
+let lastMiles = -1;
+let trailProgress = -1;
+let scrollFrame = 0;
 let chapter = -1;
 let joshIndex = -1;
 const nav = $('#nav');
 const milesEl = $('#miles');
 const milesGauge = $('#milesGauge');
+const scrollLine = $('#scrollLine');
 function onScroll() {
+  scrollFrame = 0;
   const y = scrollY, vh = innerHeight, mid = y + vh / 2;
   let s = 0;
   layout.chapters.forEach((c, i) => { if (mid >= c.top) s = i + clamp((mid - c.top) / c.h); });
@@ -74,21 +70,32 @@ function onScroll() {
   }
 
   state.trailP = clamp(((mid - layout.trail.top) / layout.trail.h) * 1.35 - 0.12);
-  const miles = Math.round(state.trailP * 2185).toLocaleString('en-US');
-  if (milesEl.textContent !== miles) milesEl.textContent = miles;
-  milesGauge.style.strokeDashoffset = 1 - state.trailP;
+  const miles = Math.round(state.trailP * 2185);
+  if (miles !== lastMiles) {
+    milesEl.textContent = miles.toLocaleString('en-US');
+    lastMiles = miles;
+  }
+  if (state.trailP !== trailProgress) {
+    milesGauge.style.strokeDashoffset = 1 - state.trailP;
+    trailProgress = state.trailP;
+  }
 
   const c = Math.min(chapters.length - 1, Math.floor(s));
   if (c !== chapter) setChapter(c);
 
   const progress = clamp(y / layout.max);
-  $('#scrollLine').style.transform = `scaleX(${progress})`;
-  dockRing.style.strokeDashoffset = 94.25 * (1 - progress);
+  scrollLine.style.transform = `scaleX(${progress})`;
+  if (state.mobile) dockRing.style.strokeDashoffset = 94.25 * (1 - progress);
   dock.classList.toggle('is-in', y > vh * 0.55);
   nav.classList.toggle('is-solid', y > 40);
-  nav.classList.toggle('is-hidden', y > lastY + 2 && y > vh * 0.7);
-  if (y < lastY - 2) nav.classList.remove('is-hidden');
-  lastY = y;
+  if (y <= vh * 0.7 || Math.abs(y - navY) > 10) {
+    nav.classList.toggle('is-hidden', y > vh * 0.7 && y > navY);
+    navY = y;
+  }
+}
+
+function queueScroll() {
+  scrollFrame ||= requestAnimationFrame(onScroll);
 }
 
 function setChapter(c) {
@@ -161,39 +168,6 @@ function setupJoshCards() {
     cards.forEach((c, k) => c.classList.toggle('is-on', k === i));
   };
   wrap.addEventListener('scroll', () => { raf ||= requestAnimationFrame(update); }, { passive: true });
-  update();
-}
-
-// ---------- phones: the shelf is a coverflow ----------
-function setupCoverflow() {
-  const grid = $('#shelfGrid');
-  let raf = 0, current = null, flowing = false;
-  const update = () => {
-    raf = 0;
-    const items = $$('.book', grid).filter((li) => !li.hidden);
-    if (!state.mobile) {
-      if (flowing) items.forEach((li) => { $('a', li).style.cssText = ''; $('.b3d', li).style.removeProperty('--ry'); delete li.dataset.d; });
-      flowing = false;
-      return;
-    }
-    flowing = true;
-    const r = grid.getBoundingClientRect(), cx = r.left + r.width / 2;
-    let best = null, bestD = 9;
-    items.forEach((li) => {
-      const b = li.getBoundingClientRect();
-      const d = clamp(((b.left + b.width / 2) - cx) / (r.width * 0.6), -1, 1);
-      const a = Math.abs(d);
-      li.dataset.d = d.toFixed(3);
-      $('a', li).style.cssText = `transform: translateY(${a * 22}px) scale(${1 - a * 0.2}); opacity: ${1 - a * 0.55}`;
-      // books beside the centre turn their faces in toward it
-      $('.b3d', li).style.setProperty('--ry', `${d * 48 - (1 - a) * 12}deg`);
-      if (a < bestD) { bestD = a; best = li; }
-    });
-    if (best !== current) { if (current) haptic(); current = best; }
-  };
-  grid.addEventListener('scroll', () => { raf ||= requestAnimationFrame(update); }, { passive: true });
-  addEventListener('resize', () => { raf ||= requestAnimationFrame(update); });
-  $('#filters').addEventListener('click', () => setTimeout(() => { grid.scrollLeft = 0; update(); }, 760));
   update();
 }
 
@@ -296,31 +270,14 @@ function enhanceButtons() {
 function setupReveals() {
   if (!hasGsap || reducedMotion) return;
   const once = (trigger, start = 'top 86%') => ({ trigger, start, once: true });
-  $$('[data-split]').forEach((el) => {
-    if (SplitText && !reducedMotion) {
-      SplitText.create(el, {
-        type: 'lines', mask: 'lines', autoSplit: true,
-        onSplit: (self) => gsap.from(self.lines, { yPercent: 108, duration: 1.15, ease: 'expo.out', stagger: 0.09, scrollTrigger: once(el, 'top 84%') }),
-      });
-    } else {
-      gsap.from(el, { autoAlpha: 0, duration: 0.6, scrollTrigger: once(el) });
-    }
-  });
-  $$('[data-reveal]').forEach((el) => {
-    gsap.from(el, { autoAlpha: 0, y: reducedMotion ? 0 : 30, duration: reducedMotion ? 0.5 : 1.1, ease: 'power3.out', scrollTrigger: once(el, 'top 90%') });
+  $$('[data-split], [data-reveal]').forEach((el) => {
+    gsap.from(el, { opacity: 0, y: 15, duration: 0.5, ease: 'power2.out', scrollTrigger: once(el, 'top 94%') });
   });
   $$('.rule').forEach((el) => gsap.from(el, { scaleX: 0, duration: 1.4, ease: 'expo.out', scrollTrigger: once(el) }));
-  $$('[data-count]').forEach((el) => {
-    const to = +el.dataset.count;
-    const fmt = (n) => (el.hasAttribute('data-comma') ? Math.round(n).toLocaleString('en-US') : String(Math.round(n)));
-    if (reducedMotion) return;
-    const o = { v: +el.dataset.from || 0 };
-    el.textContent = fmt(o.v);
-    gsap.to(o, { v: to, duration: 2.2, delay: 0.6, ease: 'power3.out', onUpdate: () => { el.textContent = fmt(o.v); }, scrollTrigger: once(el, 'top 92%') });
-  });
+
 }
 
-// ---------- shelf filters (Flip) ----------
+// ---------- shelf filters ----------
 function setupFilters() {
   const bar = $('#filters');
   bar.hidden = false;
@@ -330,17 +287,12 @@ function setupFilters() {
     if (!btn) return;
     const k = btn.dataset.filter;
     $$('button', bar).forEach((b) => b.setAttribute('aria-pressed', b === btn));
-    const before = Flip && !reducedMotion ? Flip.getState(items) : null;
     items.forEach((li) => { li.hidden = !(k === 'all' || li.dataset.series === k); });
-    const done = () => { measure(); ScrollTrigger?.refresh(); };
-    if (before) {
-      Flip.from(before, {
-        duration: 0.7, ease: 'power3.inOut', absolute: true, scale: true,
-        onEnter: (els) => gsap.fromTo(els, { autoAlpha: 0, y: 30 }, { autoAlpha: 1, y: 0, duration: 0.6, delay: 0.2 }),
-        onLeave: (els) => gsap.to(els, { autoAlpha: 0, duration: 0.25 }),
-        onComplete: done,
-      });
-    } else done();
+    $('#shelfGrid').scrollTo({ left: 0, behavior: 'instant' });
+    measure();
+    queueScroll();
+    if (hasGsap) ScrollTrigger.refresh();
+
   });
 }
 
@@ -392,7 +344,7 @@ function setupCaseFile() {
     cover.dataset.series = b.series;
     cover.replaceChildren();
     if (b.cover) {
-      const img = new Image(); img.alt = `Cover of ${b.title}`; img.src = b.cover; img.width = 512; img.height = 768;
+      const img = new Image(); img.alt = b.artLabel || `Cover of ${b.title}`; img.src = b.cover; img.width = 512; img.height = 768;
       cover.append(img);
     } else {
       const t = document.createElement('span'); t.className = 'cover__title'; t.textContent = b.title;
@@ -407,8 +359,9 @@ function setupCaseFile() {
     buy.hidden = !b.buy;
     if (b.buy) buy.href = b.buy;
 
-    lenis?.stop();
     dlg.showModal();
+    state.paused = true;
+    document.documentElement.classList.add('dialog-open');
     haptic();
     if (!hasGsap || reducedMotion) return;
     if (state.mobile) {
@@ -433,11 +386,6 @@ function setupCaseFile() {
     if (!a || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
     const li = a.closest('.book');
-    // in the phone coverflow, tapping a side book brings it to the centre first
-    if (e.detail && state.mobile && Math.abs(+li.dataset.d || 0) > 0.2) {
-      li.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
-      return;
-    }
     open(byId[li.dataset.book], $('.b3d', a));
   });
 
@@ -450,7 +398,10 @@ function setupCaseFile() {
   $('#cfClose').addEventListener('click', close);
   dlg.addEventListener('click', (e) => { if (e.target === dlg) close(); });
   dlg.addEventListener('cancel', (e) => { e.preventDefault(); close(); });
-  dlg.addEventListener('close', () => lenis?.start());
+  dlg.addEventListener('close', () => {
+    state.paused = false;
+    document.documentElement.classList.remove('dialog-open');
+  });
 
   // drag the handle down to dismiss
   const grab = $('#cfGrab');
@@ -476,7 +427,7 @@ function setupCaseFile() {
 // ---------- themed details: police tape, redactions, depth ----------
 // ---------- circular studio components ----------
 function setupCircles() {
-  // seals: the phrase is set on a circle path; it turns slowly, faster while scrolling
+  // Set the seal text on a circular path.
   $$('[data-seal]').forEach((el, k) => {
     const NS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(NS, 'svg');
@@ -494,15 +445,6 @@ function setupCircles() {
     svg.append(path, text);
     el.prepend(svg);
   });
-  const rings = $$('.seal__ring');
-  if (hasGsap && !reducedMotion) {
-    const spins = rings.map((r) => gsap.to(r, { rotation: 360, duration: 24, repeat: -1, ease: 'none', transformOrigin: '50% 50%' }));
-    lenis?.on('scroll', ({ velocity }) => {
-      const speed = 1 + Math.min(Math.abs(velocity) * 0.25, 7);
-      spins.forEach((t) => gsap.to(t, { timeScale: speed, duration: 0.3, overwrite: true }));
-    });
-  }
-
   // chapter dials beside each label
   $$('.chapter .col > .label, .shelf__head .label').forEach((label) => {
     label.insertAdjacentHTML('afterbegin', '<svg class="dial" viewBox="0 0 24 24" aria-hidden="true"><circle class="dial__track" cx="12" cy="12" r="9.5"/><circle class="dial__fill" cx="12" cy="12" r="9.5" pathLength="1"/></svg>');
@@ -532,10 +474,6 @@ function setupSectionMotion() {
   $$('.list').forEach((list) => {
     gsap.from($$('.list__item', list), { y: 40, autoAlpha: 0, rotationX: -18, transformPerspective: 800, duration: 0.9, stagger: 0.14, ease: 'power3.out', scrollTrigger: once(list) });
   });
-  // the shelf fills book by book (the phone coverflow handles its own motion)
-  if (!state.mobile) {
-    gsap.from('#shelfGrid .book', { y: 70, autoAlpha: 0, duration: 0.9, stagger: { each: 0.05, from: 'start' }, ease: 'power3.out', scrollTrigger: once('#shelfGrid', 'top 85%') });
-  }
   // the off-duty card and the press card tilt in like papers laid on a desk
   ['.offduty', '.press'].forEach((sel) => {
     gsap.from(sel, { rotationX: -24, rotation: -1.5, y: 40, transformPerspective: 900, transformOrigin: '50% 100%', duration: 1.1, ease: 'expo.out', scrollTrigger: once(sel, 'top 88%') });
@@ -557,7 +495,7 @@ function setupTheme() {
   }), { threshold: 1, rootMargin: '0px 0px -12% 0px' });
   $$('.redact').forEach((el) => (io ? io.observe(el) : el.classList.add('is-open')));
 
-  if (!hasGsap || reducedMotion) return;
+  if (!hasGsap || reducedMotion || state.mobile) return;
   const scrub = (trigger, extra = {}) => ({ trigger, start: 'top bottom', end: 'bottom top', scrub: 0.6, ...extra });
   // tape slides across as it passes, its two strips in opposite directions
   $$('.tape').forEach((tape) => {
@@ -567,15 +505,7 @@ function setupTheme() {
       gsap.from(strip, { x: dir * 260, ease: 'none', scrollTrigger: scrub(tape, { start: 'top bottom', end: 'top 55%' }) });
     });
   });
-  // headlines drift a little slower than the page; the portrait shifts inside its frame
-  $$('.chapter:not(.josh):not(.hero) .title').forEach((el) => {
-    gsap.fromTo(el, { y: 50 }, { y: -50, ease: 'none', scrollTrigger: scrub(el) });
-  });
-  gsap.fromTo('.portrait picture img', { yPercent: -5, scale: 1.12 }, { yPercent: 5, scale: 1.12, ease: 'none', scrollTrigger: scrub('.portrait') });
-  // list books turn toward the reader as they pass
-  $$('.b3d--thumb').forEach((el) => {
-    gsap.fromTo(el, { '--ry': '-44deg' }, { '--ry': '-8deg', ease: 'none', scrollTrigger: scrub(el, { end: 'center 40%' }) });
-  });
+
 }
 
 // ---------- misc ----------
@@ -613,13 +543,14 @@ async function boot() {
   setupSectionMotion();
   setupDock();
   setupJoshCards();
-  setupCoverflow();
   setupHeroSpin();
   measure();
   onScroll();
-  (lenis ? lenis.on.bind(lenis, 'scroll') : (fn) => addEventListener('scroll', fn, { passive: true }))(onScroll);
-  addEventListener('resize', () => { measure(); onScroll(); });
-  if (hasGsap) ScrollTrigger.addEventListener('refresh', () => { measure(); onScroll(); });
+  addEventListener('scroll', queueScroll, { passive: true });
+  const updateLayout = () => { measure(); queueScroll(); };
+  addEventListener('resize', updateLayout);
+  if (hasGsap) ScrollTrigger.addEventListener('refresh', updateLayout);
+  if ('ResizeObserver' in window) new ResizeObserver(updateLayout).observe($('#main'));
   setupReveals();
 
   let stage = null;
@@ -643,9 +574,5 @@ async function boot() {
   setStatus('Stage ready');
   setTimeout(() => statusEl.classList.add('is-done'), 600);
 
-  // the hero book swings into its pose once the stage is lit
-  const t0 = performance.now(), dur = state.reduced ? 1 : 2000;
-  const tick = (now) => { state.intro = clamp((now - t0) / dur); if (state.intro < 1) requestAnimationFrame(tick); };
-  requestAnimationFrame(tick);
 }
 boot();
