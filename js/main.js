@@ -610,6 +610,10 @@ async function boot() {
     stage = initScene($('#stage'), art, state);
     if (stage) await stage.start(hasGsap ? gsap.ticker : null, showStaticStage);
     if (stage) $('#stage').classList.add('is-ready');
+    // on phones the book turns a little each way once, showing it can be dragged
+    if (stage && state.mobile && hasGsap && !reducedMotion && !finePointer) {
+      gsap.to(state, { spin: 0.55, duration: 0.8, delay: 1.1, ease: 'sine.inOut', yoyo: true, repeat: 1 });
+    }
   } catch (err) {
     stage = null;
     console.warn('3D stage unavailable; the page continues without it.', err);

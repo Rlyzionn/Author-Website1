@@ -860,3 +860,110 @@ html.dialog-open { overflow: hidden; }
   .dispatch__eyebrow i { animation: none; }
   .dispatch__ring .dispatch__ring-fill { stroke-dashoffset: 0; }
 }
+
+/* ==========================================================================
+   Phone polish: thumb-sized targets, readable captions, one card language,
+   touch feedback instead of hover, motion tied to the swipe.
+   ========================================================================== */
+html { background: var(--ink); }
+
+@media (max-width: 599px), (max-width: 1199px) and (max-aspect-ratio: 11/10) {
+  /* header: safe area aware, a 44px mark and a proper Blog pill */
+  .nav { padding-top: max(10px, env(safe-area-inset-top)); padding-bottom: 10px; background: linear-gradient(rgba(7,7,8,.92), rgba(7,7,8,0)); }
+  .nav.is-solid { background: rgba(7,7,8,.92); }
+  .brand { min-height: 44px; }
+  .brand__mark { width: 44px; height: 44px; }
+  .nav__links a[href="/blog/"] {
+    display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px;
+    border: 1px solid var(--line-strong); border-radius: 999px; font-size: .82rem; color: var(--text);
+  }
+  .nav__links a[href="/blog/"]::after { display: none; }
+
+  /* the book itself hints that it turns (see main.js), so no floating chip */
+  .hero__touch, body:has(#stage.is-ready) .hero__touch { display: none; }
+
+  /* tighter, even rhythm between chapters */
+  .hero { padding-bottom: 56px; }
+  .chapter { padding-top: 52vh; padding-bottom: 72px; }
+
+  /* captions: never smaller than 12px on a phone */
+  .eyebrow, .label, .dispatch__eyebrow, .dispatch__meta time, .jcard__series, .book__series, .book__status,
+  .shelf__hint, .facts li > span, .portrait figcaption, .odometer__u, .press__label, .list__by, .writing__post time {
+    font-size: 12px !important; letter-spacing: .12em;
+  }
+  .dispatch__new { font-size: 10px; }
+
+  /* tap targets of at least 44px */
+  .dispatch__all, .list__links a, .jcard__links a, .footer__links a, .writing__post h3 a {
+    display: inline-flex; align-items: center; min-height: 44px;
+  }
+  .list__links { gap: 18px; }
+  .filters button { min-height: 44px; }
+  .btn-sm, #copyBio { min-height: 44px; }
+  .filters button[aria-pressed="true"] { min-height: 48px; }
+  .footer__links { gap: 0 6px; }
+  .footer__links a { padding: 0 10px; margin-left: -10px; }
+
+  /* one card language for everything you swipe: hero posts, Josh, writing */
+  .writing { padding: 72px 0; }
+  .writing__grid {
+    display: flex; gap: 12px; margin: 1.5rem calc(-1 * var(--gutter)); padding: 0 var(--gutter) 6px;
+    overflow-x: auto; scroll-snap-type: x mandatory; scroll-padding-inline: var(--gutter); scrollbar-width: none; overscroll-behavior-x: contain;
+  }
+  .writing__grid::-webkit-scrollbar { display: none; }
+  .writing__post {
+    flex: 0 0 84%; scroll-snap-align: start; padding: 20px 20px 18px; border: 1px solid var(--line);
+    background: linear-gradient(160deg, rgba(30,28,30,.92), rgba(12,12,14,.94));
+  }
+  .writing__post h3 { font-size: 1.6rem; margin: .5rem 0; }
+  .writing__excerpt { overflow: hidden; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; font-size: .95rem; }
+  .jcard, .writing__post, .dispatch__item a { border-radius: 14px; }
+
+  /* touch feedback: a press, not a hover */
+  a, button { -webkit-tap-highlight-color: transparent; }
+  .btn:active, .jcard__links a:active, .dispatch__item a:active, .writing__post:active, .book a:active, .filters button:active, .dock__chapter:active {
+    transform: scale(.97); transition: transform .12s;
+  }
+}
+
+/* phones and tablets have no hover: stop taps leaving hover states stuck on */
+@media (hover: none) {
+  .btn-primary:hover:not(:focus-visible) { color: var(--ink); }
+  .btn-primary:hover:not(:focus-visible)::before { transform: translate(-50%, -50%) scale(0); }
+  .btn-primary:hover .btn__icon, .btn-primary:hover .btn__icon::before { transform: none; }
+  .btn-primary:hover .btn__icon::after { transform: translateX(-120%); }
+  .btn:hover .btn__roll > span:first-child { transform: none; }
+  .btn:hover .btn__roll > span + span { transform: translateY(105%); }
+  .book a:hover .b3d { --ry: -16deg; --lift: 0px; }
+  .book a:hover .book__title { color: inherit; }
+  .list__item:hover .b3d--thumb { --lift: 0px; }
+  .list__item:hover::before { transform: scaleY(0); }
+}
+
+/* the phone shelf as a true coverflow, driven by the swipe itself (no script):
+   the centred book faces you, its neighbours turn in and fall back */
+@property --ry { syntax: '<angle>'; inherits: true; initial-value: -16deg; }
+@supports (animation-timeline: view()) {
+  @media (max-width: 599px), (max-width: 1199px) and (max-aspect-ratio: 11/10) {
+    .shelf__grid .book a { animation: shelfFall linear both; animation-timeline: view(inline); }
+    .shelf__grid .b3d { animation: shelfTurn linear both; animation-timeline: view(inline); }
+    .jcards .jcard, .dispatch__list .dispatch__item, .writing__grid .writing__post { animation: cardFocus linear both; animation-timeline: view(inline); }
+  }
+}
+@keyframes shelfFall {
+  0%, 100% { transform: translateY(24px) scale(.8); opacity: .4; }
+  50% { transform: none; opacity: 1; }
+}
+@keyframes shelfTurn {
+  0% { --ry: 42deg; }
+  50% { --ry: -12deg; }
+  100% { --ry: -62deg; }
+}
+@keyframes cardFocus {
+  0% { opacity: .5; transform: scale(.94); }
+  35%, 65% { opacity: 1; transform: none; }
+  100% { opacity: .5; transform: scale(.94); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shelf__grid .book a, .shelf__grid .b3d, .jcards .jcard, .dispatch__list .dispatch__item, .writing__grid .writing__post { animation: none !important; }
+}
