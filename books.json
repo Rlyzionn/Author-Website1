@@ -1,0 +1,175 @@
+[
+  {
+    "id": "collision",
+    "series": "josh",
+    "title": "Collision Course",
+    "tagline": "Where the law and the street meet head-on, Detective Lt. Josh Williams has to pick a lane.",
+    "description": "After a police sergeant’s fatal encounter with a troubled Marine veteran, an ambitious prosecutor sees a chance to advance his political career. Detective Lieutenant Josh Williams has to follow the evidence as the case becomes a fight over who gets to tell the story.",
+    "buy": "https://www.amazon.com/dp/B00OU1WQPC",
+    "goodreads": "https://www.goodreads.com/search?q=Collision+Course+Broadmeadow",
+    "cover": "assets/covers/collision.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2020/05/collision_course.png"
+  },
+  {
+    "id": "silenced",
+    "series": "josh",
+    "title": "Silenced Justice",
+    "tagline": "When the system goes quiet, someone has to keep talking. Josh Williams won’t let it rest.",
+    "description": "Detective Lieutenant Josh Williams takes a fresh look at a 1972 case after a former colleague asks for help. A man died behind bars before his innocence could be established, and following the evidence exposes a conspiracy that reaches well beyond the original investigation.",
+    "buy": "https://www.amazon.com/dp/1506182704",
+    "goodreads": "https://www.goodreads.com/search?q=Silenced+Justice+Broadmeadow",
+    "isbn": "9781506182704",
+    "cover": "assets/covers/silenced.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2016/09/jebwizard_silenced_justice.jpg"
+  },
+  {
+    "id": "pieces",
+    "series": "josh",
+    "title": "Pieces of the Past",
+    "tagline": "A 1970s cold case comes back, and some of what was buried with it comes back too.",
+    "description": "Human remains found at an abandoned construction site send Detective Lieutenant Josh Williams back to a kidnapping from the 1970s. What begins as a review of an old case becomes a live investigation as new evidence meets scarce resources and political pressure.",
+    "buy": "https://www.amazon.com/dp/B0FSTJ351J",
+    "goodreads": "https://www.goodreads.com/search?q=Pieces+of+the+Past+Broadmeadow",
+    "cover": "assets/covers/pieces.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2026/09/Cover-page-1-jpg-resized-1.jpg"
+  },
+  {
+    "id": "buried",
+    "series": "josh",
+    "title": "Buried Verdicts",
+    "tagline": "Listed in Joe’s official bibliography as a Josh Williams novel.",
+    "description": "Listed in Joe’s official bibliography as a Josh Williams novel."
+  },
+  {
+    "id": "improbable",
+    "series": "josh",
+    "title": "Improbable Cause",
+    "tagline": "Listed in Joe’s official bibliography as a Josh Williams novel.",
+    "description": "Listed in Joe’s official bibliography as a Josh Williams novel."
+  },
+  {
+    "id": "hate",
+    "series": "hawk",
+    "title": "A Change of Hate",
+    "tagline": "A former Green Beret turned defense lawyer takes a case built on a Buddhist monk’s secrets.",
+    "description": "Harrison “Hawk” Bennett is a former Green Beret turned defense attorney. When he represents a Buddhist monk accused of murder, memories of Vietnam draw him toward a conspiracy and a colonel he thought he had killed.",
+    "buy": "https://www.amazon.com/dp/1519797281",
+    "goodreads": "https://www.goodreads.com/search?q=A+Change+of+Hate+Broadmeadow",
+    "cover": "assets/covers/hate.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2026/06/Change-of-hate-cover-Front.webp"
+  },
+  {
+    "id": "wayitwas",
+    "series": "true",
+    "title": "It’s Just the Way It Was",
+    "tagline": "Inside the war on the New England mob.",
+    "description": "Joe Broadmeadow and former Rhode Island State Police superintendent Brendan Doherty recount the investigations, surveillance and work with informants that went into the fight against organized crime in New England.",
+    "coauthor": "with Brendan Doherty",
+    "subtitle": "Inside the War on the New England Mob",
+    "buy": "https://www.amazon.com/dp/B07WV49RGX",
+    "goodreads": "https://www.goodreads.com/search?q=Its+Just+the+Way+It+Was+Broadmeadow",
+    "isbn": "9781733526401",
+    "cover": "assets/covers/wayitwas.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2026/09/Its_Just_the_Way_it_Was-Cover.jpg"
+  },
+  {
+    "id": "choices",
+    "series": "true",
+    "title": "Choices",
+    "tagline": "A life on the other side of the law, told without excuses.",
+    "description": "Jerry Tillinghast recounts his life in his own words, from growing up in Providence and serving as a Marine in Vietnam to his years in the orbit of the New England mob. He describes what those choices cost him and his family.",
+    "coauthor": "with Jerry Tillinghast",
+    "subtitle": "You Make ’em, You Own ’em",
+    "buy": "https://www.amazon.com/dp/B07GFKGY98",
+    "goodreads": "https://www.goodreads.com/search?q=Choices+Broadmeadow+Tillinghast",
+    "cover": "assets/covers/choices.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2025/09/0ab61-choices_cover-150.png"
+  },
+  {
+    "id": "unmade",
+    "series": "true",
+    "title": "UnMade",
+    "tagline": "What it costs to walk away from the life.",
+    "description": "Bobby Walason describes surviving on the streets as a child, going to prison as a teenager and becoming a New England mob enforcer. Written with Joe Broadmeadow, his account follows the choices that eventually let him leave that life.",
+    "coauthor": "with Bobby Walason",
+    "subtitle": "Honor, Loyalty, Redemption",
+    "buy": "https://www.amazon.com/dp/B07NKRJKW5",
+    "goodreads": "https://www.goodreads.com/search?q=UnMade+Broadmeadow",
+    "cover": "assets/covers/unmade.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2019/04/unmade-dr-04-cover.png"
+  },
+  {
+    "id": "divine",
+    "series": "true",
+    "title": "Divine Providence",
+    "subtitle": "The Mayor, the Mob, and the Man in the Middle",
+    "coauthor": "with Pat Cortellessa",
+    "tagline": "One man saw the worlds of Buddy Cianci and Raymond Patriarca from the inside.",
+    "description": "Joe Broadmeadow and Pat Cortellessa trace the overlapping worlds of Providence mayor Buddy Cianci and mob boss Raymond Patriarca through the experience of Cortellessa, who knew both circles firsthand.",
+    "buy": "https://www.amazon.com/dp/1736828827",
+    "isbn": "9781736828823",
+    "cover": "assets/covers/divine.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2025/09/99fc9-divine-providence.png"
+  },
+  {
+    "id": "saving",
+    "series": "dragon",
+    "title": "Saving the Last Dragon",
+    "tagline": "The last of a kind that was supposed to be legend.",
+    "description": "Duncan Emeris starts writing a story about dragons for school. When the dragons in his dreams turn out to be real, he and his friends are drawn into the search for the last dragon egg.",
+    "buy": "https://www.amazon.com/dp/B018ECUNKW",
+    "goodreads": "https://www.goodreads.com/search?q=Saving+the+Last+Dragon+Broadmeadow",
+    "cover": "assets/covers/saving.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2015/12/kdpcover.jpg"
+  },
+  {
+    "id": "raising",
+    "series": "dragon",
+    "title": "Raising the Last Dragon",
+    "tagline": "Now it has to grow up.",
+    "description": "In the sequel to Saving the Last Dragon, Duncan Emeris and his friends must protect the last dragon’s eggs from people determined to destroy them.",
+    "infoLabel": "Read Joe’s announcement",
+    "infoUrl": "https://joebroadmeadowblog.com/2025/09/12/the-story-continues/",
+    "cover": "assets/covers/raising.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2026/09/Raising-the-last-dragon-Book-Cover.png"
+  },
+  {
+    "id": "defending",
+    "series": "dragon",
+    "title": "Defending the Last Dragon",
+    "tagline": "The final book in the trilogy.",
+    "description": "Joe announced the final installment in The Last Dragon trilogy in his April 2026 author dispatch.",
+    "status": "In development",
+    "infoLabel": "Read Joe’s announcement",
+    "infoUrl": "https://joebroadmeadowblog.com/2026/04/21/38555/"
+  },
+  {
+    "id": "trail",
+    "series": "trail",
+    "title": "Spirit of the Trail",
+    "tagline": "Georgia to Maine on foot.",
+    "description": "Inspired by Joe Broadmeadow’s 2,185-mile Appalachian Trail thru-hike, this short story follows two hikers who meet on the trail and take the first miles together.",
+    "subtitle": "2,185 Miles on the Appalachian Trail",
+    "buy": "https://www.amazon.com/dp/B00RJDCO7I",
+    "goodreads": "https://www.goodreads.com/search?q=Spirit+of+the+Trail+Broadmeadow",
+    "cover": "assets/covers/trail.webp",
+    "coverSource": "https://joebroadmeadowblog.com/wp-content/uploads/2018/01/spirit-of-the-trail.jpg"
+  },
+  {
+    "id": "flap",
+    "series": "kids",
+    "title": "Flap Flap",
+    "tagline": "Listed in Joe’s official bibliography as a picture book titled Flap Flap: The Silliest Dragon.",
+    "description": "Listed in Joe’s official bibliography as a picture book titled Flap Flap: The Silliest Dragon.",
+    "subtitle": "The Silliest Dragon"
+  },
+  {
+    "id": "thauma",
+    "series": "kids",
+    "title": "Thauma",
+    "tagline": "A small bedtime story about wonder.",
+    "description": "In Joe’s story about childhood wonder, four-year-old Levi discovers Thauma in the quiet space under the stairs.",
+    "infoLabel": "Read the story",
+    "infoUrl": "https://joebroadmeadowblog.com/2026/08/26/thauma/"
+  }
+]

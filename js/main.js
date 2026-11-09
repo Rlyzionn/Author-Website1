@@ -22,7 +22,7 @@ const state = { s: 0.5, heroScroll: 0, spin: 0, joshP: 0, trailP: 0, mx: 0, my: 
 const chapters = $$('.chapter');
 const josh = bySeries('josh');
 const statusEl = $('#stageStatus');
-const setStatus = (text) => { statusEl.textContent = text; };
+const setStatus = (text) => { if (!statusEl.classList.contains('is-done')) statusEl.textContent = text; };
 
 // ---------- motion system: Lenis + GSAP (only if the CDN scripts loaded) ----------
 const { gsap, ScrollTrigger, SplitText, Flip, Lenis } = window;
@@ -67,7 +67,7 @@ function onScroll() {
 
   // on phones the swipe cards turn the Josh shelf instead of the page scroll
   if (!state.mobile) {
-    state.joshP = clamp((y - layout.josh.top) / (layout.josh.h - vh));
+    state.joshP = clamp((y - layout.josh.top) / Math.max(1, layout.josh.h - vh));
     // a little hysteresis so the book can't flip back and forth at a boundary
     const at = state.joshP * (josh.length - 1);
     if (joshIndex === -1 || Math.abs(at - joshIndex) > 0.6) setJosh(Math.round(at));
@@ -140,8 +140,9 @@ function setupJoshCards() {
     const title = document.createElement('h3'); title.className = 'jcard__title'; title.textContent = b.title;
     const tag = document.createElement('p'); tag.className = 'jcard__tag'; tag.textContent = b.tagline;
     const links = document.createElement('p'); links.className = 'jcard__links';
-    [['Buy on Amazon', b.amazon], ['Goodreads', b.goodreads]].forEach(([text, href]) => {
-      const a = document.createElement('a'); a.href = href; a.target = '_blank'; a.rel = 'noopener'; a.textContent = text;
+    [['Buy on Amazon', b.buy], ['Book page', b.page]].forEach(([text, href]) => {
+      if (!href) return;
+      const a = document.createElement('a'); a.href = href; a.textContent = text;
       links.append(a);
     });
     card.append(series, title, tag, links);
@@ -239,17 +240,20 @@ function setJosh(i) {
   $$('#joshPips i').forEach((p, k) => p.classList.toggle('is-on', k === i));
   $('#joshTitle').textContent = b.title;
   $('#joshTag').textContent = b.tagline;
-  $('#joshAmazon').href = b.amazon;
-  $('#joshGoodreads').href = b.goodreads;
+  const buy = $('#joshAmazon');
+  buy.hidden = !b.buy;
+  if (b.buy) buy.href = b.buy;
+  $('#joshDetails').href = b.page;
   $$('#joshTicks a').forEach((a, k) => a.classList.toggle('is-active', k === i));
   if (hasGsap && !reducedMotion && !first) {
     gsap.fromTo('#joshBody', { opacity: 0.25, y: 10 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out', overwrite: true });
   }
 }
 $$('#joshTicks a').forEach((a) => a.addEventListener('click', (e) => {
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
   e.preventDefault();
   const i = +a.dataset.josh;
-  scrollToY(layout.josh.top + (layout.josh.h - innerHeight) * (i / (josh.length - 1)));
+  scrollToY(layout.josh.top + (layout.josh.h - innerHeight) * (i / Math.max(1, josh.length - 1)));
 }));
 
 // ---------- buttons ----------
@@ -290,7 +294,7 @@ function enhanceButtons() {
 
 // ---------- scroll reveals ----------
 function setupReveals() {
-  if (!hasGsap) return; // without GSAP, content simply stays visible
+  if (!hasGsap || reducedMotion) return;
   const once = (trigger, start = 'top 86%') => ({ trigger, start, once: true });
   $$('[data-split]').forEach((el) => {
     if (SplitText && !reducedMotion) {
@@ -345,30 +349,11 @@ async function buildArt() {
   setStatus('Loading type');
   await ensureFonts();
   setStatus('Preparing the covers');
-  const art = {};
-  for (const b of BOOKS) {
-    const real = await loadCoverImage(b);
-    art[b.id] = { cover: real || drawCover(b), spine: drawSpine(b) };
-  }
-  return art;
-}
-
-const coverUrls = {};
-async function fillCovers(art) {
-  const urls = coverUrls;
-  await Promise.all(BOOKS.map((b) => new Promise((resolve) => {
-    art[b.id].cover.toBlob((blob) => { urls[b.id] = blob ? URL.createObjectURL(blob) : null; resolve(); }, 'image/jpeg', 0.86);
-  })));
-  $$('[data-cover]').forEach((el) => {
-    const url = urls[el.dataset.cover];
-    if (!url) return;
-    const img = new Image();
-    img.alt = ''; img.loading = 'lazy'; img.decoding = 'async';
-    img.width = 512; img.height = 768;
-    img.src = url;
-    el.setAttribute('aria-hidden', 'true');
-    el.append(img);
-  });
+  const entries = await Promise.all(BOOKS.map(async (book) => {
+    const cover = await loadCoverImage(book) || drawCover(book);
+    return [book.id, { cover, spine: drawSpine(book) }];
+  }));
+  return Object.fromEntries(entries);
 }
 
 // ---------- 3D books: every cover gets page edges and a spine ----------
@@ -397,22 +382,17 @@ function makeBooks3d() {
 }
 
 // ---------- case file: book detail opened from the shelf ----------
-function setLabel(btn, text) {
-  const spans = $$('.btn__roll > span', btn);
-  if (spans.length) spans.forEach((sp) => { sp.textContent = text; });
-  else $('.btn__label', btn).textContent = text;
-}
 function setupCaseFile() {
   const dlg = $('#casefile');
-  if (!dlg || typeof dlg.showModal !== 'function') return; // the shelf links still go to Amazon
-  const book3d = $('#cfBook'), cover = $('#cfCover'), buy = $('#cfBuy'), gr = $('#cfGoodreads'), sheet = $('.casefile__sheet', dlg);
+  if (!dlg || typeof dlg.showModal !== 'function') return; // The shelf links open the static book pages.
+  const book3d = $('#cfBook'), cover = $('#cfCover'), buy = $('#cfBuy'), sheet = $('.casefile__sheet', dlg);
 
   function open(b, fromEl) {
     book3d.dataset.series = b.series;
     cover.dataset.series = b.series;
     cover.replaceChildren();
-    if (coverUrls[b.id]) {
-      const img = new Image(); img.alt = ''; img.src = coverUrls[b.id]; img.width = 512; img.height = 768;
+    if (b.cover) {
+      const img = new Image(); img.alt = `Cover of ${b.title}`; img.src = b.cover; img.width = 512; img.height = 768;
       cover.append(img);
     } else {
       const t = document.createElement('span'); t.className = 'cover__title'; t.textContent = b.title;
@@ -422,11 +402,10 @@ function setupCaseFile() {
     $('#cfSeries').textContent = b.coauthor ? `${SERIES[b.series].label}, ${b.coauthor}` : SERIES[b.series].label;
     $('#cfTitle').textContent = b.title;
     $('#cfSub').textContent = b.subtitle || '';
-    $('#cfTag').textContent = b.tagline;
-    buy.hidden = b.soon;
-    buy.href = b.amazon;
-    gr.href = b.goodreads;
-    setLabel(gr, b.soon ? 'Follow on Goodreads' : 'Goodreads');
+    $('#cfTag').textContent = b.description;
+    $('#cfDetails').href = b.page;
+    buy.hidden = !b.buy;
+    if (b.buy) buy.href = b.buy;
 
     lenis?.stop();
     dlg.showModal();
@@ -455,7 +434,7 @@ function setupCaseFile() {
     e.preventDefault();
     const li = a.closest('.book');
     // in the phone coverflow, tapping a side book brings it to the centre first
-    if (state.mobile && Math.abs(+li.dataset.d || 0) > 0.2) {
+    if (e.detail && state.mobile && Math.abs(+li.dataset.d || 0) > 0.2) {
       li.scrollIntoView({ behavior: reducedMotion ? 'auto' : 'smooth', inline: 'center', block: 'nearest' });
       return;
     }
@@ -570,7 +549,7 @@ function setupTheme() {
   $$('.tape__strip span').forEach((sp) => { sp.textContent = Array(14).fill(sp.textContent.trim()).join('   '); });
 
   // redaction bars peel off once the phrase is in view
-  const io = 'IntersectionObserver' in window && new IntersectionObserver((entries) => entries.forEach((en) => {
+  const io = !reducedMotion && 'IntersectionObserver' in window && new IntersectionObserver((entries) => entries.forEach((en) => {
     if (!en.isIntersecting) return;
     const el = en.target;
     setTimeout(() => el.classList.add('is-open'), el.closest('.hero') ? 1400 : 450);
@@ -624,6 +603,7 @@ if (navigator.clipboard) {
 
 // ---------- boot ----------
 async function boot() {
+  document.documentElement.classList.add('js');
   makeBooks3d();
   enhanceButtons();
   setupFilters();
@@ -642,24 +622,24 @@ async function boot() {
   if (hasGsap) ScrollTrigger.addEventListener('refresh', () => { measure(); onScroll(); });
   setupReveals();
 
-  const art = await buildArt();
-  fillCovers(art);
-
-  setStatus('Lighting the stage');
   let stage = null;
+  const statusTimeout = setTimeout(() => statusEl.classList.add('is-done'), 5000);
   try {
-    const { initScene } = await import('./scene.js');
+    const [{ initScene }, art] = await Promise.all([import('./scene.js'), buildArt()]);
+    setStatus('Lighting the stage');
     stage = initScene($('#stage'), art, state);
+    if (stage) await stage.start(hasGsap ? gsap.ticker : null);
+    if (stage) $('#stage').classList.add('is-ready');
   } catch (err) {
+    stage = null;
     console.warn('3D stage unavailable; the page continues without it.', err);
   }
+  clearTimeout(statusTimeout);
   if (!stage) {
     document.documentElement.classList.add('no-webgl');
     statusEl.classList.add('is-done');
     return;
   }
-  await stage.start(hasGsap ? gsap.ticker : null);
-  $('#stage').classList.add('is-ready');
   setStatus('Stage ready');
   setTimeout(() => statusEl.classList.add('is-done'), 600);
 

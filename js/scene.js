@@ -466,7 +466,7 @@ export function initScene(canvas, art, state) {
 
   // 4 · true crime: three exhibits
   const trueA = anchor();
-  const trueBooks = bySeries('true').map((b, i) => {
+  const trueBooks = bySeries('true').slice(0, 3).map((b, i) => {
     const m = makeBook(b, 0.92);
     trueA.add(m);
     return { m, i };

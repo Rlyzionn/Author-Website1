@@ -8,12 +8,20 @@
   <meta name="theme-color" content="#070708">
   <meta property="og:title" content="Joe Broadmeadow | Stories Forged in Truth">
   <meta property="og:description" content="Twenty years on the force. Now he writes it down.">
-  <meta property="og:image" content="assets/headshot.jpg">
-  <script>document.documentElement.classList.add('js')</script>
+  <link rel="canonical" href="https://author-website1-eight.vercel.app/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://author-website1-eight.vercel.app/">
+  <meta property="og:image" content="https://author-website1-eight.vercel.app/assets/headshot.jpg">
+  <meta name="twitter:card" content="summary_large_image">
+  <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"Person","name":"Joe Broadmeadow","url":"https://author-website1-eight.vercel.app/","image":"https://author-website1-eight.vercel.app/assets/headshot.jpg","jobTitle":"Author","sameAs":["https://joebroadmeadowblog.com/","https://www.goodreads.com/author/show/9821599.Joe_Broadmeadow"]}
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..600&family=Anton&family=Archivo:wght@700;800&family=Cinzel:wght@700&family=Special+Elite&display=swap" rel="stylesheet">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
   <script type="importmap">
     { "imports": {
@@ -27,6 +35,7 @@
   <script defer src="https://cdn.jsdelivr.net/npm/gsap@3.13.0/dist/Flip.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/lenis@1.3.17/dist/lenis.min.js"></script>
   <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/writing.js"></script>
 </head>
 <body data-chapter="0">
   <a class="skip" href="#main">Skip to content</a>
@@ -35,7 +44,7 @@
   <div class="grain" aria-hidden="true"></div>
   <div class="vignette" aria-hidden="true"></div>
   <div class="scroll-line" aria-hidden="true"><span id="scrollLine"></span></div>
-  <p class="stage-status" id="stageStatus" role="status" aria-live="polite"></p>
+  <p class="stage-status sr-only" id="stageStatus" role="status" aria-live="polite"></p>
 
   <header class="nav" id="nav">
     <a class="brand" href="#hero" aria-label="Joe Broadmeadow, home">
@@ -47,7 +56,7 @@
       <a href="#josh">Novels</a>
       <a href="#truecrime">True crime</a>
       <a href="#dragon">Fantasy</a>
-      <a href="https://joebroadmeadowblog.com" target="_blank" rel="noopener">Blog</a>
+      <a href="#writing">Blog</a>
     </nav>
     <a class="btn btn-primary btn-sm" href="#shelf" data-magnetic>
       <span class="btn__label">All books</span>
@@ -58,6 +67,9 @@
 
     <!-- HOOK -->
     <section class="chapter hero" id="hero" data-name="Opening" data-side="left">
+      <a class="hero__fallback" href="/books/pieces/" aria-label="About Pieces of the Past">
+        <img src="/assets/covers/pieces.webp" width="1080" height="1723" alt="Cover of Pieces of the Past" fetchpriority="high">
+      </a>
       <div class="wrap">
         <div class="col">
           <p class="eyebrow hero-in" style="--d:0">Crime fiction, true crime and fantasy</p>
@@ -75,7 +87,7 @@
           <ul class="facts hero-in" style="--d:4">
             <li><strong><span data-count="20">20</span> years</strong><span>East Providence Police</span></li>
             <li><strong>Captain</strong><span>Retired, commanded detectives</span></li>
-            <li><strong>Since <span data-count="2019" data-from="1978">2019</span></strong><span>JEBWizard Publishing</span></li>
+            <li><strong>Since <span data-count="2019" data-from="1978">2019</span></strong><span>JEBWizard</span></li>
           </ul>
         </div>
       </div>
@@ -115,7 +127,7 @@
             <li><time>On the job</time><p>Commands the Investigative Services Division and works with the FBI and DEA on the Organized Crime Drug Enforcement Task Force.</p></li>
             <li><time>1998</time><p>Retires as a captain after twenty years of service.</p></li>
             <li><time>2014</time><p>Walks the entire Appalachian Trail, Georgia to Maine.</p></li>
-            <li><time>2019</time><p>Founds JEBWizard Publishing in Warren, Rhode Island, to publish new and emerging authors.</p></li>
+            <li><time>2019</time><p>Founds JEBWizard Creative Media in Warren, Rhode Island, to publish new and emerging authors.</p></li>
             <li><time>Today</time><p>Writes novels and true crime, plus commentary that has appeared in the <em>Providence Journal</em>, the <em>Boston Globe</em> and Rhode Island Current.</p></li>
           </ul>
 
@@ -138,27 +150,23 @@
             <p class="lede lede--sm" data-reveal>Detective Lt. Josh Williams, East Providence PD. Cold cases, hot tempers and a city that <span class="redact">keeps its secrets.</span> <span class="on-wide">Keep scrolling to turn the shelf.</span><span class="on-phone">Swipe the cards to turn the shelf.</span></p>
             <div class="jcards" id="jcards" role="group" aria-label="Josh Williams novels, swipe to browse"></div>
             <article class="feature" data-reveal aria-live="polite">
-              <div class="feature__pips" id="joshPips" aria-hidden="true"><i class="is-on"></i><i></i><i></i><i></i><i></i></div>
+              <div class="feature__pips" id="joshPips" aria-hidden="true"><!-- JOSH_PIPS --></div>
               <div class="feature__body" id="joshBody">
                 <h3 class="feature__title" id="joshTitle">Collision Course</h3>
                 <p class="feature__tag" id="joshTag">Where the law and the street meet head-on, Detective Lt. Josh Williams has to pick a lane.</p>
               </div>
               <div class="cta-row">
-                <a class="btn btn-primary" id="joshAmazon" href="https://www.amazon.com/s?k=Collision+Course+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener" data-magnetic>
+                <a class="btn btn-primary" id="joshAmazon" href="{{buy:collision}}" target="_blank" rel="noopener" data-magnetic>
                   <span class="btn__label">Buy on Amazon</span>
                   <span class="btn__icon" aria-hidden="true"></span>
                 </a>
-                <a class="btn btn-link" id="joshGoodreads" href="https://www.goodreads.com/search?q=Collision+Course+Broadmeadow" target="_blank" rel="noopener">
-                  <span class="btn__label">Goodreads</span>
+                <a class="btn btn-link" id="joshDetails" href="/books/collision/">
+                  <span class="btn__label">Book page</span>
                 </a>
               </div>
             </article>
             <ul class="ticks" id="joshTicks" aria-label="Josh Williams novels">
-              <li><a href="https://www.amazon.com/s?k=Collision+Course+Joe+Broadmeadow&amp;i=stripbooks" data-josh="0">Collision Course</a></li>
-              <li><a href="https://www.amazon.com/s?k=Silenced+Justice+Joe+Broadmeadow&amp;i=stripbooks" data-josh="1">Silenced Justice</a></li>
-              <li><a href="https://www.amazon.com/s?k=Pieces+of+the+Past+Joe+Broadmeadow&amp;i=stripbooks" data-josh="2">Pieces of the Past</a></li>
-              <li><a href="https://www.amazon.com/s?k=Buried+Verdicts+Joe+Broadmeadow&amp;i=stripbooks" data-josh="3">Buried Verdicts</a></li>
-              <li><a href="https://www.amazon.com/s?k=Improbable+Cause+Joe+Broadmeadow&amp;i=stripbooks" data-josh="4">Improbable Cause</a></li>
+              <!-- JOSH_TICKS -->
             </ul>
           </div>
         </div>
@@ -173,7 +181,7 @@
           <h2 class="title" data-split>Hawk Bennett, <em>for the defense</em></h2>
           <p class="lede" data-reveal>A former Green Beret who became a defense lawyer. He knows how to fight, and he knows the system can be stacked. In <strong>A Change of Hate</strong> he takes a case that puts him beside a Buddhist monk who is carrying secrets.</p>
           <div class="cta-row" data-reveal>
-            <a class="btn btn-primary" href="https://www.amazon.com/s?k=A+Change+of+Hate+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener" data-magnetic>
+            <a class="btn btn-primary" href="{{buy:hate}}" target="_blank" rel="noopener" data-magnetic>
               <span class="btn__label">Buy A Change of Hate</span>
               <span class="btn__icon" aria-hidden="true"></span>
             </a>
@@ -200,7 +208,7 @@
                 <h3>It’s Just the Way It Was</h3>
                 <p class="list__by">With Brendan Doherty, former Rhode Island State Police superintendent</p>
                 <p>The war on the New England mob, seen from inside law enforcement.</p>
-                <p class="list__links"><a href="https://www.amazon.com/s?k=Its+Just+the+Way+It+Was+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">Amazon</a><a href="https://www.goodreads.com/search?q=Its+Just+the+Way+It+Was+Broadmeadow" target="_blank" rel="noopener">Goodreads</a></p>
+                <p class="list__links"><a href="{{buy:wayitwas}}" target="_blank" rel="noopener">Amazon</a><a href="https://www.goodreads.com/search?q=Its+Just+the+Way+It+Was+Broadmeadow" target="_blank" rel="noopener">Goodreads</a></p>
               </div>
             </li>
             <li class="list__item">
@@ -209,7 +217,7 @@
                 <h3>Choices: You Make ’em, You Own ’em</h3>
                 <p class="list__by">The Jerry Tillinghast story</p>
                 <p>The good, the bad and the ugly of a life on the other side of the law, told without excuses.</p>
-                <p class="list__links"><a href="https://www.amazon.com/s?k=Choices+You+Make+em+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">Amazon</a><a href="https://www.goodreads.com/search?q=Choices+Broadmeadow+Tillinghast" target="_blank" rel="noopener">Goodreads</a></p>
+                <p class="list__links"><a href="{{buy:choices}}" target="_blank" rel="noopener">Amazon</a><a href="https://www.goodreads.com/search?q=Choices+Broadmeadow+Tillinghast" target="_blank" rel="noopener">Goodreads</a></p>
               </div>
             </li>
             <li class="list__item">
@@ -218,7 +226,7 @@
                 <h3>UnMade: Honor, Loyalty, Redemption</h3>
                 <p class="list__by">The Bobby Walason story</p>
                 <p>What it costs to walk away from the life, and what it takes to start again.</p>
-                <p class="list__links"><a href="https://www.amazon.com/s?k=UnMade+Honor+Loyalty+Redemption+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">Amazon</a><a href="https://www.goodreads.com/search?q=UnMade+Broadmeadow" target="_blank" rel="noopener">Goodreads</a></p>
+                <p class="list__links"><a href="{{buy:unmade}}" target="_blank" rel="noopener">Amazon</a><a href="https://www.goodreads.com/search?q=UnMade+Broadmeadow" target="_blank" rel="noopener">Goodreads</a></p>
               </div>
             </li>
           </ul>
@@ -239,7 +247,7 @@
               <div>
                 <h3>Saving the Last Dragon</h3>
                 <p>Magic, Rhode Island lore, and the last of a kind that was supposed to be legend.</p>
-                <p class="list__links"><a href="https://www.amazon.com/s?k=Saving+the+Last+Dragon+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">Amazon</a><a href="https://www.goodreads.com/search?q=Saving+the+Last+Dragon+Broadmeadow" target="_blank" rel="noopener">Goodreads</a></p>
+                <p class="list__links"><a href="{{buy:saving}}" target="_blank" rel="noopener">Amazon</a><a href="https://www.goodreads.com/search?q=Saving+the+Last+Dragon+Broadmeadow" target="_blank" rel="noopener">Goodreads</a></p>
               </div>
             </li>
             <li class="list__item">
@@ -247,15 +255,15 @@
               <div>
                 <h3>Raising the Last Dragon</h3>
                 <p>Saving a dragon was the easy part. Now it has to grow up.</p>
-                <p class="list__links"><a href="https://www.amazon.com/s?k=Raising+the+Last+Dragon+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">Amazon</a><a href="https://www.goodreads.com/search?q=Raising+the+Last+Dragon+Broadmeadow" target="_blank" rel="noopener">Goodreads</a></p>
+                <p class="list__links"><a href="/books/raising/">About the book</a></p>
               </div>
             </li>
             <li class="list__item">
               <span class="cover cover--thumb" data-cover="defending" data-series="dragon"><span class="cover__title">Defending the Last Dragon</span></span>
               <div>
-                <h3>Defending the Last Dragon <span class="tag">Coming soon</span></h3>
+                <h3>Defending the Last Dragon <span class="tag">In development</span></h3>
                 <p>The final book in the trilogy.</p>
-                <p class="list__links"><a href="https://www.goodreads.com/search?q=Defending+the+Last+Dragon+Broadmeadow" target="_blank" rel="noopener">Follow on Goodreads</a></p>
+                <p class="list__links"><a href="/books/defending/">About the book</a></p>
               </div>
             </li>
           </ul>
@@ -272,7 +280,7 @@
           <p class="odometer" data-reveal><svg class="gauge" viewBox="0 0 120 120" aria-hidden="true"><circle class="gauge__ticks" cx="60" cy="60" r="56" pathLength="120" /><circle class="gauge__track" cx="60" cy="60" r="46" /><circle class="gauge__fill" id="milesGauge" cx="60" cy="60" r="46" pathLength="1" /></svg><span class="odometer__n" id="miles">2,185</span><span class="odometer__u">miles, Georgia to Maine</span></p>
           <p class="lede lede--sm" data-reveal>In 2014 Joe walked the entire Appalachian Trail. This book grew out of those months on foot: a man who spent a career reading people, alone with his own thoughts.</p>
           <div class="cta-row" data-reveal>
-            <a class="btn btn-frame" href="https://www.amazon.com/s?k=Spirit+of+the+Trail+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener" data-magnetic>
+            <a class="btn btn-frame" href="{{buy:trail}}" target="_blank" rel="noopener" data-magnetic>
               <span class="btn__label">Walk it with him</span>
             </a>
           </div>
@@ -302,96 +310,7 @@
         <!-- The bibliography. js/data.js reads these items, so this list is the single source of truth. -->
         <p class="shelf__hint" aria-hidden="true">Swipe the shelf, tap a book to open its file</p>
         <ul class="shelf__grid" id="shelfGrid">
-          <li class="book" data-book="collision" data-series="josh" data-motif="redblue" data-goodreads="https://www.goodreads.com/search?q=Collision+Course+Broadmeadow" data-tagline="Where the law and the street meet head-on, Detective Lt. Josh Williams has to pick a lane.">
-            <a href="https://www.amazon.com/s?k=Collision+Course+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="collision" data-series="josh"><span class="cover__title">Collision Course</span></span>
-              <span class="book__series">Josh Williams</span><span class="book__title">Collision Course</span>
-            </a>
-          </li>
-          <li class="book" data-book="silenced" data-series="josh" data-motif="redact" data-goodreads="https://www.goodreads.com/search?q=Silenced+Justice+Broadmeadow" data-tagline="When the system goes quiet, someone has to keep talking. Josh Williams won’t let it rest.">
-            <a href="https://www.amazon.com/s?k=Silenced+Justice+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="silenced" data-series="josh"><span class="cover__title">Silenced Justice</span></span>
-              <span class="book__series">Josh Williams</span><span class="book__title">Silenced Justice</span>
-            </a>
-          </li>
-          <li class="book" data-book="pieces" data-series="josh" data-motif="blood" data-goodreads="https://www.goodreads.com/search?q=Pieces+of+the+Past+Broadmeadow" data-tagline="A 1970s cold case comes back, and some of what was buried with it comes back too.">
-            <a href="https://www.amazon.com/s?k=Pieces+of+the+Past+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="pieces" data-series="josh"><span class="cover__title">Pieces of the Past</span></span>
-              <span class="book__series">Josh Williams</span><span class="book__title">Pieces of the Past</span>
-            </a>
-          </li>
-          <li class="book" data-book="buried" data-series="josh" data-motif="strata" data-goodreads="https://www.goodreads.com/search?q=Buried+Verdicts+Broadmeadow" data-tagline="Some judgments are handed down in courtrooms. Others are buried and left to rot.">
-            <a href="https://www.amazon.com/s?k=Buried+Verdicts+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="buried" data-series="josh"><span class="cover__title">Buried Verdicts</span></span>
-              <span class="book__series">Josh Williams</span><span class="book__title">Buried Verdicts</span>
-            </a>
-          </li>
-          <li class="book" data-book="improbable" data-series="josh" data-motif="tape" data-goodreads="https://www.goodreads.com/search?q=Improbable+Cause+Broadmeadow" data-tagline="The evidence says one thing. Twenty years of instinct says another.">
-            <a href="https://www.amazon.com/s?k=Improbable+Cause+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="improbable" data-series="josh"><span class="cover__title">Improbable Cause</span></span>
-              <span class="book__series">Josh Williams</span><span class="book__title">Improbable Cause</span>
-            </a>
-          </li>
-          <li class="book" data-book="hate" data-series="hawk" data-motif="wings" data-goodreads="https://www.goodreads.com/search?q=A+Change+of+Hate+Broadmeadow" data-tagline="A former Green Beret turned defense lawyer takes a case built on a Buddhist monk’s secrets.">
-            <a href="https://www.amazon.com/s?k=A+Change+of+Hate+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="hate" data-series="hawk"><span class="cover__title">A Change of Hate</span></span>
-              <span class="book__series">Hawk Bennett</span><span class="book__title">A Change of Hate</span>
-            </a>
-          </li>
-          <li class="book" data-book="wayitwas" data-series="true" data-motif="film" data-coauthor="with Brendan Doherty" data-goodreads="https://www.goodreads.com/search?q=Its+Just+the+Way+It+Was+Broadmeadow" data-tagline="Inside the war on the New England mob.">
-            <a href="https://www.amazon.com/s?k=Its+Just+the+Way+It+Was+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="wayitwas" data-series="true"><span class="cover__title">It’s Just the Way It Was</span></span>
-              <span class="book__series">True crime</span><span class="book__title">It’s Just the Way It Was</span>
-            </a>
-          </li>
-          <li class="book" data-book="choices" data-series="true" data-motif="film" data-subtitle="You Make ’em, You Own ’em" data-coauthor="with Jerry Tillinghast" data-goodreads="https://www.goodreads.com/search?q=Choices+Broadmeadow+Tillinghast" data-tagline="A life on the other side of the law, told without excuses.">
-            <a href="https://www.amazon.com/s?k=Choices+You+Make+em+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="choices" data-series="true"><span class="cover__title">Choices</span></span>
-              <span class="book__series">True crime</span><span class="book__title">Choices</span>
-            </a>
-          </li>
-          <li class="book" data-book="unmade" data-series="true" data-motif="film" data-subtitle="Honor, Loyalty, Redemption" data-coauthor="with Bobby Walason" data-goodreads="https://www.goodreads.com/search?q=UnMade+Broadmeadow" data-tagline="What it costs to walk away from the life.">
-            <a href="https://www.amazon.com/s?k=UnMade+Honor+Loyalty+Redemption+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="unmade" data-series="true"><span class="cover__title">UnMade</span></span>
-              <span class="book__series">True crime</span><span class="book__title">UnMade</span>
-            </a>
-          </li>
-          <li class="book" data-book="saving" data-series="dragon" data-motif="scales" data-goodreads="https://www.goodreads.com/search?q=Saving+the+Last+Dragon+Broadmeadow" data-tagline="The last of a kind that was supposed to be legend.">
-            <a href="https://www.amazon.com/s?k=Saving+the+Last+Dragon+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="saving" data-series="dragon"><span class="cover__title">Saving the Last Dragon</span></span>
-              <span class="book__series">The Last Dragon</span><span class="book__title">Saving the Last Dragon</span>
-            </a>
-          </li>
-          <li class="book" data-book="raising" data-series="dragon" data-motif="scales" data-goodreads="https://www.goodreads.com/search?q=Raising+the+Last+Dragon+Broadmeadow" data-tagline="Now it has to grow up.">
-            <a href="https://www.amazon.com/s?k=Raising+the+Last+Dragon+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="raising" data-series="dragon"><span class="cover__title">Raising the Last Dragon</span></span>
-              <span class="book__series">The Last Dragon</span><span class="book__title">Raising the Last Dragon</span>
-            </a>
-          </li>
-          <li class="book" data-book="defending" data-series="dragon" data-motif="scales" data-soon data-goodreads="https://www.goodreads.com/search?q=Defending+the+Last+Dragon+Broadmeadow" data-tagline="The final book in the trilogy.">
-            <a href="https://www.goodreads.com/search?q=Defending+the+Last+Dragon+Broadmeadow" target="_blank" rel="noopener">
-              <span class="cover" data-cover="defending" data-series="dragon"><span class="cover__title">Defending the Last Dragon</span></span>
-              <span class="book__series">The Last Dragon, coming soon</span><span class="book__title">Defending the Last Dragon</span>
-            </a>
-          </li>
-          <li class="book" data-book="trail" data-series="trail" data-motif="mountains" data-subtitle="2,185 Miles on the Appalachian Trail" data-goodreads="https://www.goodreads.com/search?q=Spirit+of+the+Trail+Broadmeadow" data-tagline="Georgia to Maine on foot.">
-            <a href="https://www.amazon.com/s?k=Spirit+of+the+Trail+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="trail" data-series="trail"><span class="cover__title">Spirit of the Trail</span></span>
-              <span class="book__series">The Appalachian Trail</span><span class="book__title">Spirit of the Trail</span>
-            </a>
-          </li>
-          <li class="book" data-book="flap" data-series="kids" data-motif="kids" data-subtitle="The Silliest Dragon" data-goodreads="https://www.goodreads.com/search?q=Flap+Flap+Broadmeadow" data-tagline="A dragon who can’t quite get the hang of flying.">
-            <a href="https://www.amazon.com/s?k=Flap+Flap+Silliest+Dragon+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="flap" data-series="kids"><span class="cover__title">Flap Flap</span></span>
-              <span class="book__series">Picture book</span><span class="book__title">Flap Flap</span>
-            </a>
-          </li>
-          <li class="book" data-book="thauma" data-series="kids" data-motif="kids2" data-goodreads="https://www.goodreads.com/search?q=Thauma+Broadmeadow" data-tagline="A small bedtime story about wonder.">
-            <a href="https://www.amazon.com/s?k=Thauma+Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">
-              <span class="cover" data-cover="thauma" data-series="kids"><span class="cover__title">Thauma</span></span>
-              <span class="book__series">Picture book</span><span class="book__title">Thauma</span>
-            </a>
-          </li>
+          <!-- BOOK_CATALOG -->
         </ul>
       </div>
     </section>
@@ -402,22 +321,33 @@
         <div class="col">
           <p class="label" data-reveal>Closing argument</p>
           <h2 class="title title--xl" data-split>Pick up <em>the case.</em></h2>
-          <p class="lede" data-reveal>Every book is on Amazon and Goodreads. For interviews, events or press, the media kit with his bio and headshot is on Joe’s blog.</p>
+          <p class="lede" data-reveal>Explore Joe’s books and writing. For interviews, events and press, his media kit includes his biography and headshot.</p>
           <div class="cta-row" data-reveal>
-            <a class="seal seal--cta" href="https://www.amazon.com/s?k=Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener" data-magnetic data-seal="Pick up the case ★ Shop all books ★ ">
+            <a class="seal seal--cta" href="https://www.amazon.com/stores/Joe-Broadmeadow/author/B00OWPE9GU" target="_blank" rel="noopener" data-magnetic data-seal="Pick up the case ★ Shop all books ★ ">
               <span class="seal__core seal__arrow" aria-hidden="true"></span>
               <span class="sr-only">Shop all books on Amazon</span>
             </a>
-            <a class="btn btn-frame" href="https://joebroadmeadowblog.com/press-kit/" target="_blank" rel="noopener" data-magnetic>
+            <a class="btn btn-frame" href="https://joebroadmeadowblog.com/press-kit-2/" target="_blank" rel="noopener" data-magnetic>
               <span class="btn__label">Press and media kit</span>
             </a>
           </div>
           <div class="press" data-reveal>
             <p class="press__label">Short bio, for the press</p>
-            <p class="press__bio" id="pressBio">Joe Broadmeadow retired as a captain from the East Providence, Rhode Island Police Department after twenty years, where he commanded the Investigative Services Division and served on the Organized Crime Drug Enforcement Task Force. He writes the Josh Williams and Hawk Bennett crime novels, true crime, a young adult fantasy trilogy and picture books, and founded JEBWizard Publishing in 2019.</p>
+            <p class="press__bio" id="pressBio">Joe Broadmeadow retired as a captain from the East Providence, Rhode Island Police Department after twenty years, where he commanded the Investigative Services Division and served on the Organized Crime Drug Enforcement Task Force. He writes the Josh Williams and Hawk Bennett crime novels, true crime, a young adult fantasy trilogy and picture books, and founded JEBWizard Creative Media in 2019.</p>
             <button class="btn btn-link" type="button" id="copyBio" hidden><span class="btn__label">Copy bio</span></button>
           </div>
         </div>
+      </div>
+    </section>
+
+    <section class="chapter writing" id="writing" data-name="Writing" aria-labelledby="writingTitle">
+      <div class="wrap wrap--wide">
+        <p class="label">From the desk</p>
+        <h2 class="title" id="writingTitle">Latest <em>writing.</em></h2>
+        <p class="lede">Essays, short fiction and observations from Joe’s WordPress blog.</p>
+        <p class="sr-only" id="writingStatus" role="status"></p>
+        <div class="writing__grid" id="writingPosts"><!-- WRITING_SNAPSHOT --></div>
+        <a class="btn btn-frame writing__archive" href="https://joebroadmeadowblog.com/writing/">Browse the WordPress archive</a>
       </div>
     </section>
   </main>
@@ -453,12 +383,10 @@
         <p class="casefile__sub" id="cfSub"></p>
         <p class="lede" id="cfTag"></p>
         <div class="cta-row">
+          <a class="btn btn-link" id="cfDetails" href="/#shelf">Book page</a>
           <a class="btn btn-primary" id="cfBuy" href="#" target="_blank" rel="noopener">
             <span class="btn__label">Buy on Amazon</span>
             <span class="btn__icon" aria-hidden="true"></span>
-          </a>
-          <a class="btn btn-link" id="cfGoodreads" href="#" target="_blank" rel="noopener">
-            <span class="btn__label">Goodreads</span>
           </a>
         </div>
       </div>
@@ -469,13 +397,13 @@
     <div class="wrap wrap--wide footer__inner">
       <p class="footer__mark">Stories <em>forged</em> in truth.</p>
       <nav class="footer__links" aria-label="Elsewhere">
-        <a href="https://joebroadmeadowblog.com" target="_blank" rel="noopener">Blog</a>
-        <a href="https://www.amazon.com/s?k=Joe+Broadmeadow&amp;i=stripbooks" target="_blank" rel="noopener">Amazon</a>
-        <a href="https://www.goodreads.com/search?q=Joe+Broadmeadow" target="_blank" rel="noopener">Goodreads</a>
+        <a href="#writing">Blog</a>
+        <a href="https://www.amazon.com/stores/Joe-Broadmeadow/author/B00OWPE9GU" target="_blank" rel="noopener">Amazon</a>
+        <a href="https://www.goodreads.com/author/show/9821599.Joe_Broadmeadow" target="_blank" rel="noopener">Goodreads</a>
         <a href="https://www.linkedin.com/in/joe-broadmeadow-68923963/" target="_blank" rel="noopener">LinkedIn</a>
-        <!-- TODO: add the real Facebook and Medium profile links before launch -->
+        <a href="https://joebroadmeadowblog.com/contact-2/">Contact</a>
       </nav>
-      <p class="footer__small">© 2026 Joe Broadmeadow. Published by JEBWizard Publishing, Warren, Rhode Island.</p>
+      <p class="footer__small">© 2026 Joe Broadmeadow. Published by JEBWizard Creative Media, Warren, Rhode Island.</p>
     </div>
   </footer>
 </body>

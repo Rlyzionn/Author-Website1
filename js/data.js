@@ -1,13 +1,4 @@
-// The bibliography lives in the HTML (#shelfGrid) so the page works without
-// JavaScript. This module reads it back for the covers and the 3D stage.
-//
-// To use a real cover, drop the image in assets/covers/<id>.jpg and add its
-// path to COVER_FILES. Otherwise a cover is drawn in code in the series' style.
-
-export const COVER_FILES = {
-  // pieces: 'assets/covers/pieces.jpg',
-};
-
+// The build renders the catalog into HTML so book pages work without JavaScript.
 export const SERIES = {
   josh:   { label: 'A Josh Williams Novel', name: 'Josh Williams' },
   hawk:   { label: 'A Hawk Bennett Novel',  name: 'Hawk Bennett' },
@@ -20,15 +11,15 @@ export const SERIES = {
 export const BOOKS = [...document.querySelectorAll('#shelfGrid [data-book]')].map((el) => ({
   id: el.dataset.book,
   series: el.dataset.series,
-  motif: el.dataset.motif,
   title: el.querySelector('.book__title').textContent.trim(),
   subtitle: el.dataset.subtitle || null,
   coauthor: el.dataset.coauthor || null,
-  soon: el.hasAttribute('data-soon'),
+  status: el.dataset.status,
   tagline: el.dataset.tagline,
-  amazon: el.querySelector('a').href,
-  goodreads: el.dataset.goodreads,
-  cover: COVER_FILES[el.dataset.book] || null,
+  description: el.dataset.description,
+  buy: el.dataset.buy,
+  page: el.querySelector('a').href,
+  cover: el.dataset.coverFile,
 }));
 
 export const byId = Object.fromEntries(BOOKS.map((b) => [b.id, b]));
