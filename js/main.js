@@ -554,12 +554,18 @@ async function boot() {
   setupReveals();
 
   let stage = null;
+  const showStaticStage = () => {
+    stage = null;
+    $('#stage').classList.remove('is-ready');
+    document.documentElement.classList.add('no-webgl');
+    statusEl.classList.add('is-done');
+  };
   const statusTimeout = setTimeout(() => statusEl.classList.add('is-done'), 5000);
   try {
     const [{ initScene }, art] = await Promise.all([import('./scene.js'), buildArt()]);
     setStatus('Lighting the stage');
     stage = initScene($('#stage'), art, state);
-    if (stage) await stage.start(hasGsap ? gsap.ticker : null);
+    if (stage) await stage.start(hasGsap ? gsap.ticker : null, showStaticStage);
     if (stage) $('#stage').classList.add('is-ready');
   } catch (err) {
     stage = null;
@@ -567,8 +573,7 @@ async function boot() {
   }
   clearTimeout(statusTimeout);
   if (!stage) {
-    document.documentElement.classList.add('no-webgl');
-    statusEl.classList.add('is-done');
+    showStaticStage();
     return;
   }
   setStatus('Stage ready');

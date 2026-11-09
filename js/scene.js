@@ -577,10 +577,14 @@ export function initScene(canvas, art, state) {
   let onFirstFrame = null;
   let drewEmpty = false;
   let slowFrames = 0;
+  let stalledFrames = 0;
+  let stopped = false;
+  let ticker;
+  let onFallback;
   let lastInput = null;
 
   function frame() {
-    if (document.hidden || (state.paused && !onFirstFrame)) return;
+    if (stopped || document.hidden || (state.paused && !onFirstFrame)) return;
     const elapsed = clock.getDelta();
     const dt = Math.min(elapsed, 0.05);
     const input = state.reduced ? state.s + ':' + state.heroScroll + ':' + state.joshP + ':' + state.trailP : null;
@@ -733,20 +737,35 @@ export function initScene(canvas, art, state) {
     renderer.render(scene, camera);
     if (onFirstFrame) { onFirstFrame(); onFirstFrame = null; }
 
-    // Lower resolution once on devices that consistently miss their frame budget.
-    if (!drewEmpty && t > 1 && maxPR > 0.75) {
-      slowFrames = elapsed > 0.022 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
-      if (slowFrames > 10) {
-        maxPR = 0.75;
-        resize();
+    // Keep native scrolling responsive on devices that cannot run the stage.
+    if (drewEmpty || t <= 1) return;
+    stalledFrames = elapsed > 0.09 ? stalledFrames + 1 : Math.max(0, stalledFrames - 2);
+    if (stalledFrames <= 5) {
+      if (maxPR > 0.75) {
+        slowFrames = elapsed > 0.022 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
+        if (slowFrames > 10) {
+          maxPR = 0.75;
+          resize();
+        }
       }
+      return;
     }
+    stopped = true;
+    ticker?.remove(frame);
+    window.removeEventListener('resize', resize);
+    renderer.dispose();
+    onFallback?.();
   }
 
-  function loop() { requestAnimationFrame(loop); frame(); }
+  function loop() {
+    frame();
+    if (!stopped) requestAnimationFrame(loop);
+  }
   return {
     // Share the animation ticker when the page has one.
-    start(ticker) {
+    start(animationTicker, fallback) {
+      ticker = animationTicker;
+      onFallback = fallback;
       return new Promise((resolve) => {
         onFirstFrame = resolve;
         if (ticker) ticker.add(frame); else requestAnimationFrame(loop);
