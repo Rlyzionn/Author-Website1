@@ -1,9 +1,24 @@
-import { cpSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const output = 'public';
-const site = 'https://author-website1-eight.vercel.app';
-const books = JSON.parse(readFileSync('books.json', 'utf8'));
+// Set SITE_URL in Vercel when Joe's own domain is connected.
+const site = (process.env.SITE_URL || 'https://author-website1-eight.vercel.app').replace(/\/+$/, '');
+const today = new Date().toISOString().slice(0, 10);
+
+// books.json is edited through Pages CMS, so tidy what a form can produce:
+// blank fields are dropped, cover paths lose any leading slash, and a missing
+// or malformed ID is made from the title.
+const slug = (text) => String(text).normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  .replace(/['’]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const books = JSON.parse(readFileSync('books.json', 'utf8')).map((raw) => {
+  const book = Object.fromEntries(Object.entries(raw)
+    .map(([key, value]) => [key, typeof value === 'string' ? value.trim() : value])
+    .filter(([, value]) => value !== '' && value !== null && value !== undefined));
+  if (book.cover) book.cover = book.cover.replace(/^\/+/, '');
+  if (!/^[a-z0-9-]+$/.test(book.id || '')) book.id = slug(book.id || book.title);
+  return book;
+});
 const posts = JSON.parse(readFileSync('writing-snapshot.json', 'utf8'));
 const catalog = new Map(books.map((book) => [book.id, book]));
 const series = {
@@ -15,8 +30,18 @@ const escape = (text) => String(text).replace(/[&<>"']/g, (c) => ({
 })[c]);
 const bookPath = (book) => '/books/' + book.id + '/';
 const coverPath = (book) => '/' + book.cover;
+// a meta description search engines show in full (about 155 characters)
+const snippet = (text, max = 155) => {
+  const clean = String(text).replace(/\s+/g, ' ').trim();
+  if (clean.length <= max) return clean;
+  const cut = clean.slice(0, max - 1);
+  return cut.slice(0, cut.lastIndexOf(' ')).replace(/[,;:.]$/, '') + '…';
+};
+// 1200x630 JPEG share cards (made by tools/share-cards.py) beat WebP covers
+// on social sites; new books without one fall back to their cover
+const shareImage = (name, fallback) => site + (existsSync('assets/og/' + name + '.jpg') ? '/assets/og/' + name + '.jpg' : fallback);
 
-if (catalog.size !== books.length) throw new Error('Each book needs a unique ID.');
+if (catalog.size !== books.length) throw new Error('Two books share the same ID. Give each book its own ID in the Books editor.');
 
 function coverMarkup(book, extraClass = '', decorative = true) {
   const title = escape(book.title);
@@ -50,12 +75,15 @@ function shelfItem(book) {
 function bookPage(book) {
   const title = escape(book.title);
   const description = escape(book.description);
+  const metaDescription = escape(snippet(book.description));
+  const pageTitle = escape(book.title + ' by Joe Broadmeadow');
   const canonical = site + bookPath(book);
-  const image = site + (book.cover ? coverPath(book) : '/assets/headshot.jpg');
+  const image = shareImage(book.id, book.cover ? coverPath(book) : '/assets/headshot.jpg');
   const schema = {
     '@context': 'https://schema.org', '@type': 'Book', name: book.title,
     url: canonical, description: book.description,
-    author: { '@type': 'Person', name: 'Joe Broadmeadow' },
+    author: { '@type': 'Person', name: 'Joe Broadmeadow', url: site + '/' },
+    ...(book.buy && { sameAs: book.buy }),
     ...(book.isbn && { isbn: book.isbn }),
     ...(book.cover && { image }),
   };
@@ -70,13 +98,16 @@ function bookPage(book) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>${title} | Joe Broadmeadow</title>
-  <meta name="description" content="${description}">
+  <title>${pageTitle}</title>
+  <meta name="description" content="${metaDescription}">
   <link rel="canonical" href="${canonical}">
-  <meta property="og:title" content="${title}">
-  <meta property="og:description" content="${description}">
+  <meta property="og:type" content="book">
+  <meta property="og:site_name" content="Joe Broadmeadow">
+  <meta property="og:title" content="${pageTitle}">
+  <meta property="og:description" content="${metaDescription}">
   <meta property="og:url" content="${canonical}">
   <meta property="og:image" content="${image}">
+  <meta name="twitter:card" content="summary_large_image">
   <meta name="theme-color" content="#070708">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..600&display=swap">
   <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
@@ -125,9 +156,9 @@ mkdirSync(output, { recursive: true });
 for (const file of ['assets', 'js', 'styles.css']) cpSync(file, join(output, file), { recursive: true });
 for (const book of books) {
   if (!/^[a-z0-9-]+$/.test(book.id) || !Object.hasOwn(series, book.series)) {
-    throw new Error('Invalid book ID or series: ' + book.id);
+    throw new Error(`"${book.title}" needs a series chosen in the Books editor.`);
   }
-  if (book.cover) readFileSync(book.cover);
+  if (book.cover && !existsSync(book.cover)) throw new Error(`The cover image for "${book.title}" was not found (${book.cover}). Upload it again in the Books editor.`);
   const folder = join(output, 'books', book.id);
   mkdirSync(folder, { recursive: true });
   writeFileSync(join(folder, 'index.html'), bookPage(book));
@@ -153,14 +184,48 @@ const home = readFileSync('index.html', 'utf8')
   .replace(/<span class="cover cover--thumb" data-cover="([^"]+)" data-series="[^"]+"><span class="cover__title">[^<]*<\/span><\/span>/g,
     (_, id) => coverMarkup(catalog.get(id), ' cover--thumb'))
   .replace(/\{\{buy:([\w-]+)\}\}/g, (_, id) => escape(catalog.get(id).buy || bookPath(catalog.get(id))));
-writeFileSync(join(output, 'index.html'), home);
+writeFileSync(join(output, 'index.html'), home.replaceAll('https://author-website1-eight.vercel.app', site));
 mkdirSync(join(output, 'blog'), { recursive: true });
 const blog = readFileSync('blog.html', 'utf8')
   .replace('<!-- WRITING_SPOTLIGHT -->', postCard(posts[0], 'h2'))
   .replace('<!-- WRITING_SNAPSHOT -->', posts.slice(1).map((post) => postCard(post)).join('\n'));
-writeFileSync(join(output, 'blog', 'index.html'), blog);
+writeFileSync(join(output, 'blog', 'index.html'), blog.replaceAll('https://author-website1-eight.vercel.app', site));
 writeFileSync(join(output, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${site}/sitemap.xml\n`);
 writeFileSync(join(output, 'sitemap.xml'), `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${['/', '/blog/', ...books.map(bookPath)].map((path) => '  <url><loc>' + site + path + '</loc></url>').join('\n')}
+${['/', '/blog/', ...books.map(bookPath)].map((path) => '  <url><loc>' + site + path + '</loc><lastmod>' + today + '</lastmod></url>').join('\n')}
 </urlset>\n`);
+
+// a 404 page in the site's own style, served by Vercel for unknown addresses
+writeFileSync(join(output, '404.html'), `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Page not found | Joe Broadmeadow</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#070708">
+  <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@300..600&display=swap">
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body class="book-page">
+  <header class="wrap wrap--wide book-page__header">
+    <a class="brand" href="/" aria-label="Joe Broadmeadow, home">
+      <span class="brand__mark" aria-hidden="true">JB</span>
+      <span class="brand__name">Joe Broadmeadow</span>
+    </a>
+  </header>
+  <main class="wrap not-found">
+    <p class="label">Case closed</p>
+    <h1 class="title title--xl">This page <em>isn’t here.</em></h1>
+    <p class="lede">The address may have changed. Every book and every post is still a click away.</p>
+    <div class="cta-row">
+      <a class="btn btn-frame" href="/#shelf">See all books</a>
+      <a class="btn btn-link" href="/blog/">Read the blog</a>
+      <a class="btn btn-link" href="/">Home</a>
+    </div>
+  </main>
+</body>
+</html>
+`);

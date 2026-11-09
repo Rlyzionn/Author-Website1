@@ -1,0 +1,99 @@
+# Pages CMS (https://app.pagescms.org): the form Joe uses to add books,
+# change covers and update buying links. Saving commits to GitHub and Vercel
+# republishes the site in about a minute. See HANDOVER.md.
+
+media:
+  - name: covers
+    label: Book covers
+    input: assets/covers
+    output: assets/covers
+    rename: safe
+    extensions: [webp, jpg, jpeg, png]
+
+content:
+  - name: books
+    label: Books
+    type: file
+    path: books.json
+    format: json
+    list: true
+    fields:
+      - name: title
+        label: Title
+        type: string
+        required: true
+        description: The book's title as it appears on the cover.
+      - name: series
+        label: Series
+        type: select
+        required: true
+        description: Decides where the book appears on the site.
+        options:
+          values:
+            - { name: josh, label: Josh Williams novels }
+            - { name: hawk, label: Hawk Bennett novels }
+            - { name: "true", label: True crime }
+            - { name: dragon, label: The Last Dragon }
+            - { name: trail, label: The Appalachian Trail }
+            - { name: kids, label: Picture books }
+      - name: id
+        label: Web address name
+        type: string
+        required: true
+        pattern:
+          regex: "^[a-z0-9-]+$"
+          message: "Lowercase letters, numbers and dashes only, for example pieces-of-the-past"
+        description: "Short and unique, used in the book's page address (/books/this-name/). Don't change it for an existing book: old links would break."
+      - name: subtitle
+        label: Subtitle
+        type: string
+      - name: coauthor
+        label: Written with
+        type: string
+        description: "For co-written books, for example: with Brendan Doherty"
+      - name: tagline
+        label: One-line hook
+        type: string
+        required: true
+        description: A single sentence shown on the shelf and in the Josh Williams cards.
+      - name: description
+        label: Description
+        type: text
+        required: true
+        description: Two or three sentences for the book's own page. The first 155 characters also show in Google results.
+      - name: cover
+        label: Cover image
+        type: image
+        description: "The front cover only, around 1,000 pixels wide (WebP or JPEG). Leave empty if there is no cover yet."
+        options:
+          media: covers
+      - name: buy
+        label: Amazon link
+        type: string
+        description: "The book's own Amazon page, for example https://www.amazon.com/dp/1506182704. Leave empty if it isn't for sale yet."
+      - name: goodreads
+        label: Goodreads link
+        type: string
+      - name: isbn
+        label: Paperback ISBN
+        type: string
+      - name: status
+        label: Status note
+        type: string
+        description: "Optional, for example: Coming soon, or In development"
+      - name: infoUrl
+        label: Announcement link
+        type: string
+        description: For books not yet on sale, a link to Joe's blog post about it.
+      - name: infoLabel
+        label: Announcement link text
+        type: string
+        description: "For example: Read Joe's announcement"
+      - name: coverSource
+        label: Where the cover came from
+        type: string
+        description: Optional note of the cover's original location, for our records.
+      - name: artLabel
+        label: Image note
+        type: string
+        description: "Optional. Use when the image isn't the actual cover, for example: Illustration from Joe's original story"
