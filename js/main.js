@@ -4,6 +4,7 @@
 
 import { BOOKS, SERIES, byId, bySeries, STACKED } from './data.js';
 import { ensureFonts, drawCover, drawSpine, loadCoverImage } from './covers.js';
+import { fetchPosts, formatDate, isFresh } from './blog-feed.js';
 
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
@@ -425,6 +426,47 @@ function setupCaseFile() {
 }
 
 // ---------- themed details: police tape, redactions, depth ----------
+// ---------- hero: the latest dispatches from Joe's blog ----------
+const make = (tag, className) => Object.assign(document.createElement(tag), { className });
+async function setupDispatch() {
+  const box = $('#dispatch'), list = $('#dispatchList');
+  let posts = [];
+  try { ({ posts } = await fetchPosts({ perPage: 3 })); } catch { return; } // the hero simply goes without
+  if (!posts.length) return;
+  posts.forEach((post) => {
+    const li = make('li', 'dispatch__item');
+    const a = Object.assign(document.createElement('a'), { href: post.link, target: '_blank', rel: 'noopener' });
+    const thumb = make('span', 'dispatch__thumb');
+    thumb.innerHTML = '<svg class="dispatch__ring" viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="30"/><circle class="dispatch__ring-fill" cx="32" cy="32" r="30" pathLength="1"/></svg>';
+    if (post.image) {
+      thumb.append(Object.assign(new Image(), { src: post.image, alt: '', loading: 'lazy', decoding: 'async' }));
+    } else {
+      thumb.append(Object.assign(make('span', 'dispatch__quote'), { textContent: '\u201C' }));
+    }
+    const meta = make('span', 'dispatch__meta');
+    const time = Object.assign(document.createElement('time'), { dateTime: post.date.toISOString(), textContent: formatDate(post.date, false) });
+    if (isFresh(post.date)) time.append(' ', Object.assign(make('span', 'dispatch__new'), { textContent: 'New' }));
+    meta.append(time, Object.assign(make('span', 'dispatch__title'), { textContent: post.title }));
+    a.append(thumb, meta);
+    li.append(a);
+    list.append(li);
+  });
+  box.hidden = false;
+  if (hasGsap && !reducedMotion) gsap.from(box, { y: 30, autoAlpha: 0, duration: 1.1, ease: 'expo.out' });
+
+  // the ring round the active post fills like a timer, then hands on to the next
+  const items = $$('.dispatch__item', list);
+  if (reducedMotion || items.length < 2) return;
+  let current = 0;
+  const activate = (k) => items.forEach((it, j) => it.classList.toggle('is-active', j === k));
+  list.addEventListener('animationend', (e) => {
+    if (!e.target.classList.contains('dispatch__ring-fill')) return;
+    current = (current + 1) % items.length;
+    activate(current);
+  });
+  activate(0);
+}
+
 // ---------- circular studio components ----------
 function setupCircles() {
   // Set the seal text on a circular path.
@@ -535,6 +577,7 @@ if (navigator.clipboard) {
 async function boot() {
   document.documentElement.classList.add('js');
   makeBooks3d();
+  setupDispatch();
   enhanceButtons();
   setupFilters();
   setupCaseFile();

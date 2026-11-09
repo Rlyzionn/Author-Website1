@@ -313,9 +313,8 @@ export function initScene(canvas, art, state) {
     const g = bookGeos(size);
     const t = texFor(book);
     const edge = boardMat(book.series);
-    const coverMat = high
-      ? new THREE.MeshPhysicalMaterial({ map: t.cover, roughness: 0.5, roughnessMap: wearMap, clearcoat: 0.4, clearcoatRoughness: 0.35, clearcoatRoughnessMap: wearMap, envMapIntensity: 0.45 })
-      : new THREE.MeshStandardMaterial({ map: t.cover, roughness: 0.5, roughnessMap: wearMap, envMapIntensity: 0.45 });
+    // one specular layer: a clearcoat costs a second lighting pass per pixel
+    const coverMat = new THREE.MeshStandardMaterial({ map: t.cover, color: 0xe6e6e6, roughness: 0.44, roughnessMap: wearMap, envMapIntensity: 0.5 });
     const spineMat = new THREE.MeshStandardMaterial({ map: t.spine, roughness: 0.45, envMapIntensity: 0.6, side: THREE.DoubleSide });
 
     const book3d = new THREE.Group();
@@ -766,6 +765,15 @@ export function initScene(canvas, art, state) {
     start(animationTicker, fallback) {
       ticker = animationTicker;
       onFallback = fallback;
+      // compile every material and upload every texture now, so no chapter
+      // stutters the first time its object comes on stage
+      const shown = anchors.map((a) => a.visible);
+      anchors.forEach((a) => { a.visible = true; });
+      scene.traverse((o) => [].concat(o.material || []).forEach((m) => {
+        ['map', 'roughnessMap', 'emissiveMap'].forEach((k) => { if (m[k]) renderer.initTexture(m[k]); });
+      }));
+      renderer.compile(scene, camera);
+      anchors.forEach((a, i) => { a.visible = shown[i]; });
       return new Promise((resolve) => {
         onFirstFrame = resolve;
         if (ticker) ticker.add(frame); else requestAnimationFrame(loop);
