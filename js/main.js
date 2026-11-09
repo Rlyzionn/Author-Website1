@@ -431,8 +431,10 @@ const make = (tag, className) => Object.assign(document.createElement(tag), { cl
 async function setupDispatch() {
   const box = $('#dispatch'), list = $('#dispatchList');
   let posts = [];
-  try { ({ posts } = await fetchPosts({ perPage: 3 })); } catch { return; } // the hero simply goes without
-  if (!posts.length) return;
+  // the hero simply goes without; on phones its reserved space closes up
+  const giveUp = () => { box.classList.add('is-gone'); };
+  try { ({ posts } = await fetchPosts({ perPage: 3 })); } catch { giveUp(); return; }
+  if (!posts.length) { giveUp(); return; }
   posts.forEach((post) => {
     const li = make('li', 'dispatch__item');
     const a = Object.assign(document.createElement('a'), { href: post.link, target: '_blank', rel: 'noopener' });

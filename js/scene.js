@@ -584,7 +584,8 @@ export function initScene(canvas, art, state) {
 
   function frame() {
     if (stopped || document.hidden || (state.paused && !onFirstFrame)) return;
-    const elapsed = clock.getDelta();
+    const raw = clock.getDelta();
+    const elapsed = raw > 1 ? 0 : raw;
     const dt = Math.min(elapsed, 0.05);
     const input = state.reduced ? state.s + ':' + state.heroScroll + ':' + state.joshP + ':' + state.trailP : null;
     if (!needsFrame && !onFirstFrame && state.reduced && lastInput === input) return;
@@ -737,15 +738,18 @@ export function initScene(canvas, art, state) {
     if (onFirstFrame) { onFirstFrame(); onFirstFrame = null; }
 
     // Keep native scrolling responsive on devices that cannot run the stage.
-    if (drewEmpty || t <= 1) return;
-    stalledFrames = elapsed > 0.09 ? stalledFrames + 1 : Math.max(0, stalledFrames - 2);
-    if (stalledFrames <= 5) {
-      if (maxPR > 0.75) {
-        slowFrames = elapsed > 0.022 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
-        if (slowFrames > 10) {
-          maxPR = 0.75;
-          resize();
-        }
+    // Loading (fonts, covers, first uploads) hitches every phone for a moment,
+    // so nothing is judged in the first few seconds, the resolution steps
+    // down twice first, and the stage only gives up after about two seconds
+    // of single-digit frame rates.
+    if (drewEmpty || t <= 4) return;
+    stalledFrames = elapsed > 0.1 ? stalledFrames + 1 : Math.max(0, stalledFrames - 3);
+    if (stalledFrames <= 20) {
+      slowFrames = elapsed > 0.024 ? slowFrames + 1 : Math.max(0, slowFrames - 2);
+      if (slowFrames > 30 && maxPR > 0.5) {
+        maxPR = maxPR > 0.75 ? 0.75 : 0.5;
+        slowFrames = 0;
+        resize();
       }
       return;
     }
@@ -772,8 +776,11 @@ export function initScene(canvas, art, state) {
       scene.traverse((o) => [].concat(o.material || []).forEach((m) => {
         ['map', 'roughnessMap', 'emissiveMap'].forEach((k) => { if (m[k]) renderer.initTexture(m[k]); });
       }));
-      renderer.compile(scene, camera);
+      // (compileAsync in three r160 compiles just as synchronously, then can
+      // wait forever on a material without a program, so the plain call it is)
+      try { renderer.compile(scene, camera); } catch { /* shaders then compile on first use */ }
       anchors.forEach((a, i) => { a.visible = shown[i]; });
+      clock.getDelta(); // the warm-up isn't a slow frame
       return new Promise((resolve) => {
         onFirstFrame = resolve;
         if (ticker) ticker.add(frame); else requestAnimationFrame(loop);

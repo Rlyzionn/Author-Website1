@@ -942,7 +942,7 @@ html { background: var(--ink); }
 
 /* the phone shelf as a true coverflow, driven by the swipe itself (no script):
    the centred book faces you, its neighbours turn in and fall back */
-@property --ry { syntax: '<angle>'; inherits: true; initial-value: -16deg; }
+@property --ry { syntax: '<angle>'; inherits: false; initial-value: -16deg; }
 @supports (animation-timeline: view()) {
   @media (max-width: 599px), (max-width: 1199px) and (max-aspect-ratio: 11/10) {
     .shelf__grid .book a { animation: shelfFall linear both; animation-timeline: view(inline); }
@@ -966,4 +966,27 @@ html { background: var(--ink); }
 }
 @media (prefers-reduced-motion: reduce) {
   .shelf__grid .book a, .shelf__grid .b3d, .jcards .jcard, .dispatch__list .dispatch__item, .writing__grid .writing__post { animation: none !important; }
+}
+
+/* ==========================================================================
+   Phone motion fixes
+   ========================================================================== */
+/* The small list books are driven by the scroll scrub; a transition on top
+   made them lag behind it. */
+.b3d--thumb { transition: none; }
+
+@media (max-width: 599px), (max-width: 1199px) and (max-aspect-ratio: 11/10) {
+  /* The hero strip's space is kept while posts load, so the hero text never
+     jumps when they arrive; it fades in instead. */
+  .dispatch[hidden] { display: block; visibility: hidden; min-height: 132px; }
+  .dispatch.is-gone { display: none; }
+}
+
+/* Swipe-driven motion follows the finger exactly: transitions on the same
+   property made every card and book trail behind the swipe. */
+@supports (animation-timeline: view()) {
+  @media (max-width: 599px), (max-width: 1199px) and (max-aspect-ratio: 11/10) {
+    .shelf__grid .b3d, .shelf__grid .book a, .jcards .jcard, .writing__grid .writing__post, .dispatch__list .dispatch__item { transition: none; }
+    .jcards .jcard { transform-origin: 50% 50%; }
+  }
 }
